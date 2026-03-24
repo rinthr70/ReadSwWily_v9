@@ -1,11 +1,6 @@
 node_modules
-sessions
-package-lock.json
-.env
-test*
-attached_assets
-.upm
-.cache
-.local
-tmp/*
-!tmp/.gitkeep
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz

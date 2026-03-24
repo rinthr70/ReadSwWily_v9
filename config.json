@@ -1,0 +1,70 @@
+{
+  "owners": [
+    "6283134844523"
+  ],
+  "autoOnline": {
+    "enabled": true,
+    "intervalSeconds": 15
+  },
+  "memoryMonitor": {
+    "enabled": true,
+    "limitMB": 900,
+    "checkIntervalMs": 30000,
+    "logUsage": true,
+    "autoDetectLimit": false,
+    "autoDetectPercentage": 90
+  },
+  "autoReadStory": {
+    "enabled": true,
+    "autoReaction": true,
+    "randomDelay": true,
+    "delayMinMs": 5000,
+    "delayMaxMs": 5000,
+    "fixedDelayMs": 5000
+  },
+  "autoTyping": {
+    "enabled": false,
+    "delaySeconds": 1,
+    "privateChat": true,
+    "groupChat": true
+  },
+  "autoRecording": {
+    "enabled": false,
+    "delaySeconds": 1,
+    "privateChat": true,
+    "groupChat": true
+  },
+  "antiDelete": {
+    "enabled": false,
+    "privateChat": true,
+    "groupChat": true
+  },
+  "telegram": {
+    "enabled": false,
+    "token": "",
+    "chatId": ""
+  },
+  "antiCall": {
+    "enabled": true,
+    "message": "",
+    "whitelist": []
+  },
+  "antiCallVideo": {
+    "enabled": true,
+    "message": "",
+    "whitelist": []
+  },
+  "sticker": {
+    "pack": "Alamak",
+    "author": "Anda Siapa?"
+  },
+  "autoSimi": {
+    "enabled": false,
+    "apiKey": ""
+  },
+  "reactApi": {
+    "enabled": false,
+    "apiKey": "",
+    "apiUrl": ""
+  }
+}

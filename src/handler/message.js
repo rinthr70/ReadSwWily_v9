@@ -3311,35 +3311,40 @@ infoText += `_Reply pesan ini dengan angka 1 atau 2_`;
                                                 console.log('[FB] archive.lick failed:', e.message);
                                         }
                                         
-                                        // Method 2: direct page scraping via axios
+                                        // Method 2: direct page scraping via axios (Chrome user-agent, allow redirects)
                                         if (!mediaData) {
                                                 try {
                                                         const axios = (await import('axios')).default;
                                                         const { data: pageData } = await axios.get(fbUrl, {
+                                                                maxRedirects: 10,
                                                                 headers: {
-                                                                        'user-agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+                                                                        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                                                                         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                                                                         'accept-language': 'en-US,en;q=0.5',
+                                                                        'sec-fetch-dest': 'document',
+                                                                        'sec-fetch-mode': 'navigate',
+                                                                        'sec-fetch-site': 'none',
                                                                 },
-                                                                timeout: 15000
+                                                                timeout: 20000
                                                         });
                                                         
                                                         const cleaned = pageData.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
                                                         
-                                                        const hdMatch = cleaned.match(/"browser_native_hd_url":"(.*?)"/) || cleaned.match(/"playable_url_quality_hd":"(.*?)"/);
-                                                        const sdMatch = cleaned.match(/"browser_native_sd_url":"(.*?)"/) || cleaned.match(/"playable_url":"(.*?)"/);
+                                                        const hdMatch = cleaned.match(/"browser_native_hd_url":"([^"]+)"/) || cleaned.match(/"playable_url_quality_hd":"([^"]+)"/);
+                                                        const sdMatch = cleaned.match(/"browser_native_sd_url":"([^"]+)"/) || cleaned.match(/"playable_url":"([^"]+)"/);
                                                         
                                                         const hdUrl = hdMatch ? hdMatch[1].replace(/\\/g, '') : null;
                                                         const sdUrl = sdMatch ? sdMatch[1].replace(/\\/g, '') : null;
                                                         
                                                         const videoUrl = hdUrl || sdUrl;
-                                                        if (videoUrl) {
+                                                        if (videoUrl && videoUrl.startsWith('https://')) {
                                                                 mediaData = {
                                                                         url: videoUrl,
                                                                         quality: hdUrl ? 'HD' : 'SD',
                                                                         isHD: !!hdUrl,
                                                                         isVideo: true
                                                                 };
+                                                                console.log('[FB] direct scraping success:', hdUrl ? 'HD' : 'SD');
                                                         }
                                                 } catch (e) {
                                                         console.log('[FB] direct scraping failed:', e.message);

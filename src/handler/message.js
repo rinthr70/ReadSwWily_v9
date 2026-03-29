@@ -3287,76 +3287,67 @@ infoText += `_Reply pesan ini dengan angka 1 atau 2_`;
                                         
                                         let mediaData = null;
                                         
+                                        // Method 1: archive.lick.eu.org (primary)
                                         try {
-                                                const { getFbVideoInfo } = await import('fb-downloader-scrapper');
-                                                const result = await getFbVideoInfo(fbUrl);
+                                                const apiUrl = `https://archive.lick.eu.org/api/download/facebook?url=${encodeURIComponent(fbUrl)}`;
+                                                const response = await fetch(apiUrl, { signal: AbortSignal.timeout(20000) });
+                                                const data = await response.json();
                                                 
-                                                if (result && (result.sd || result.hd)) {
-                                                        const dur = result.duration_ms ? Math.floor(result.duration_ms / 1000) : 0;
-                                                        mediaData = {
-                                                                url: result.hd || result.sd,
-                                                                quality: result.hd ? 'HD' : 'SD',
-                                                                isHD: !!result.hd,
-                                                                thumbnail: result.thumbnail,
-                                                                duration: dur > 0 ? `${Math.floor(dur / 60)}:${(dur % 60).toString().padStart(2, '0')}` : null,
-                                                                isVideo: true
-                                                        };
+                                                if (data.status && data.result && data.result.media && data.result.media.length > 0) {
+                                                        const mediaList = data.result.media;
+                                                        const hdMedia = mediaList.find(m => m.quality && (m.quality.toLowerCase().includes('hd') || m.quality.toLowerCase().includes('high')));
+                                                        const bestMedia = hdMedia || mediaList[0];
+                                                        if (bestMedia && bestMedia.url) {
+                                                                mediaData = {
+                                                                        url: bestMedia.url,
+                                                                        quality: hdMedia ? 'HD' : 'SD',
+                                                                        isHD: !!hdMedia,
+                                                                        title: data.result.metadata?.title || '',
+                                                                        isVideo: true
+                                                                };
+                                                        }
                                                 }
                                         } catch (e) {
-                                                console.log('[FB] fb-downloader-scrapper failed:', e.message);
+                                                console.log('[FB] archive.lick failed:', e.message);
                                         }
                                         
+                                        // Method 2: direct page scraping via axios
                                         if (!mediaData) {
                                                 try {
-                                                        const apiUrl = `https://api.ryzendesu.vip/api/downloader/fbdl?url=${encodeURIComponent(fbUrl)}`;
-                                                        const response = await fetch(apiUrl);
-                                                        const data = await response.json();
+                                                        const axios = (await import('axios')).default;
+                                                        const { data: pageData } = await axios.get(fbUrl, {
+                                                                headers: {
+                                                                        'user-agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+                                                                        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                                                        'accept-language': 'en-US,en;q=0.5',
+                                                                },
+                                                                timeout: 15000
+                                                        });
                                                         
-                                                        if (data.success && data.data) {
-                                                                const videoUrl = data.data.hdUrl || data.data.hd || data.data.sdUrl || data.data.sd;
-                                                                if (videoUrl) {
-                                                                        mediaData = {
-                                                                                url: videoUrl,
-                                                                                quality: data.data.hdUrl || data.data.hd ? 'HD' : 'SD',
-                                                                                isHD: !!(data.data.hdUrl || data.data.hd),
-                                                                                thumbnail: data.data.thumbnail,
-                                                                                title: data.data.title,
-                                                                                isVideo: true
-                                                                        };
-                                                                }
+                                                        const cleaned = pageData.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+                                                        
+                                                        const hdMatch = cleaned.match(/"browser_native_hd_url":"(.*?)"/) || cleaned.match(/"playable_url_quality_hd":"(.*?)"/);
+                                                        const sdMatch = cleaned.match(/"browser_native_sd_url":"(.*?)"/) || cleaned.match(/"playable_url":"(.*?)"/);
+                                                        
+                                                        const hdUrl = hdMatch ? hdMatch[1].replace(/\\/g, '') : null;
+                                                        const sdUrl = sdMatch ? sdMatch[1].replace(/\\/g, '') : null;
+                                                        
+                                                        const videoUrl = hdUrl || sdUrl;
+                                                        if (videoUrl) {
+                                                                mediaData = {
+                                                                        url: videoUrl,
+                                                                        quality: hdUrl ? 'HD' : 'SD',
+                                                                        isHD: !!hdUrl,
+                                                                        isVideo: true
+                                                                };
                                                         }
                                                 } catch (e) {
-                                                        console.log('[FB] API 1 failed:', e.message);
-                                                }
-                                        }
-                                        
-                                        if (!mediaData) {
-                                                try {
-                                                        const apiUrl2 = `https://archive.lick.eu.org/api/download/facebook?url=${encodeURIComponent(fbUrl)}`;
-                                                        const response2 = await fetch(apiUrl2);
-                                                        const data2 = await response2.json();
-                                                        
-                                                        if (data2.status && data2.result) {
-                                                                const urls = data2.result.url || data2.result.urls || [];
-                                                                const videoUrl = Array.isArray(urls) ? urls[0] : urls;
-                                                                if (videoUrl) {
-                                                                        mediaData = {
-                                                                                url: videoUrl,
-                                                                                quality: 'SD',
-                                                                                isHD: false,
-                                                                                thumbnail: data2.result.thumbnail,
-                                                                                title: data2.result.title,
-                                                                                isVideo: data2.result.isVideo !== false
-                                                                        };
-                                                                }
-                                                        }
-                                                } catch (e) {
-                                                        console.log('[FB] API 2 failed:', e.message);
+                                                        console.log('[FB] direct scraping failed:', e.message);
                                                 }
                                         }
                                         
                                         if (!mediaData || !mediaData.url) {
-                                                await m.reply({ edit: loadingMsg.key, text: '❌ Gagal mengunduh. Video/story mungkin private atau link tidak valid.' });
+                                                await m.reply({ edit: loadingMsg.key, text: '❌ Gagal mengunduh. Video/story mungkin private, perlu login, atau link tidak valid.' });
                                                 break;
                                         }
                                         

@@ -3115,21 +3115,42 @@ infoText += `╰═════════════════════�
                                                 break;
                                         }
                                         
-                                        const igUrl = query.trim();
-                                        if (!igUrl.includes('instagram.com')) {
+                                        const igRaw = query.trim();
+                                        if (!igRaw.includes('instagram.com')) {
                                                 await m.reply('❌ Link tidak valid! Pastikan link dari Instagram.');
                                                 break;
                                         }
                                         
+                                        // Clean URL: strip query params & trailing slash to get a clean link
+                                        let igUrl = igRaw;
+                                        try {
+                                                const parsed = new URL(igRaw);
+                                                igUrl = parsed.origin + parsed.pathname.replace(/\/$/, '') + '/';
+                                        } catch (_) {}
+                                        
                                         const loadingMsg = await m.reply('⏳ Sedang mengunduh dari Instagram...');
                                         
-                                        const apiUrl = `https://archive.lick.eu.org/api/download/instagram?url=${encodeURIComponent(igUrl)}`;
+                                        // Try multiple APIs in order until one succeeds
+                                        const igApis = [
+                                                `https://archive.lick.eu.org/api/download/instagram?url=${encodeURIComponent(igUrl)}`,
+                                                `https://api.cenedril.net/api/dl/ig?url=${encodeURIComponent(igUrl)}`,
+                                                `https://api.agatz.xyz/api/instagram?url=${encodeURIComponent(igUrl)}`,
+                                        ];
                                         
-                                        const response = await fetch(apiUrl);
-                                        const data = await response.json();
+                                        let data = null;
+                                        for (const apiUrl of igApis) {
+                                                try {
+                                                        const res = await fetch(apiUrl, { signal: AbortSignal.timeout(12000) });
+                                                        const json = await res.json();
+                                                        if (json.status && json.result) {
+                                                                data = json;
+                                                                break;
+                                                        }
+                                                } catch (_) {}
+                                        }
                                         
-                                        if (!data.status || !data.result) {
-                                                await m.reply({ edit: loadingMsg.key, text: '❌ Gagal mengunduh. Coba lagi nanti.' });
+                                        if (!data || !data.result) {
+                                                await m.reply({ edit: loadingMsg.key, text: '❌ Gagal mengunduh. Pastikan link benar dan akun tidak private, lalu coba lagi.' });
                                                 break;
                                         }
                                         

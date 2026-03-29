@@ -3691,6 +3691,12 @@ text += `╰═════════════════╯`;
                                 break;
                 }
         } catch (error) {
-                console.error(`\x1b[31mError in message handler:\x1b[39m\n`, error);
+                const errMsg = error?.message || String(error);
+                console.error(`\x1b[31m[Handler] Error on command "${m?.command || '?'}":\x1b[39m`, errMsg);
+                try {
+                        if (m?.reply && m?.command) {
+                                await m.reply(`❌ Terjadi error pada perintah *.${m.command}*\n\n_${errMsg}_\n\nBot tetap berjalan, coba lagi atau gunakan perintah lain.`);
+                        }
+                } catch (_) {}
         }
 }

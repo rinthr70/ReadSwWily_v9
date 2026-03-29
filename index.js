@@ -41,6 +41,7 @@ import { startJadibot, jadibotMap } from './src/helper/jadibot.js';
 // ini baru - yg bawah pindah ke sini
 import messageHandler from './src/handler/message.js';
 import handleDeletedMessage from './src/handler/antidelete.js';
+import { setupCrashGuard } from './src/helper/crashGuard.js';
 
 /* ================= JADIBOT GLOBAL STATE ================= */
 global.autoStartedJadibot = new Set();
@@ -562,39 +563,48 @@ setTimeout(() => {
         });
 
         hisoka.ev.on('contacts.upsert', async contactsData => {
-                await Promise.all(
-                        contactsData.map(async contact => {
-                                const jid = await hisoka.resolveLidToPN({ remoteJid: contact.id, remoteJidAlt: contact.phoneNumber });
-                                const existingContact = (await contacts.read(jid)) || {};
-                                contacts.write(
-                                        jid,
-                                        Object.assign(
-                                                isLidUser(contact.id) ? { id: jid, lid: contact.id } : {},
-                                                { isContact: true },
-                                                existingContact,
-                                                contact
-                                        )
-                                );
-                        })
-                );
+                try {
+                        await Promise.all(
+                                contactsData.map(async contact => {
+                                        try {
+                                                const jid = await hisoka.resolveLidToPN({ remoteJid: contact.id, remoteJidAlt: contact.phoneNumber });
+                                                const existingContact = (await contacts.read(jid)) || {};
+                                                contacts.write(
+                                                        jid,
+                                                        Object.assign(
+                                                                isLidUser(contact.id) ? { id: jid, lid: contact.id } : {},
+                                                                { isContact: true },
+                                                                existingContact,
+                                                                contact
+                                                        )
+                                                );
+                                        } catch (_) {}
+                                })
+                        );
+                } catch (err) { console.error('[contacts.upsert]', err?.message); }
         });
 
         hisoka.ev.on('contacts.update', async contactsData => {
-                await Promise.all(
-                        contactsData.map(async contact => {
-                                const jid = await hisoka.resolveLidToPN({ remoteJid: contact.id, remoteJidAlt: contact.phoneNumber });
-                                const existingContact = (await contacts.read(jid)) || {};
-                                contacts.write(
-                                        jid,
-                                        Object.assign(isLidUser(contact.id) ? { id: jid, lid: contact.id } : {}, existingContact, contact)
-                                );
-                        })
-                );
+                try {
+                        await Promise.all(
+                                contactsData.map(async contact => {
+                                        try {
+                                                const jid = await hisoka.resolveLidToPN({ remoteJid: contact.id, remoteJidAlt: contact.phoneNumber });
+                                                const existingContact = (await contacts.read(jid)) || {};
+                                                contacts.write(
+                                                        jid,
+                                                        Object.assign(isLidUser(contact.id) ? { id: jid, lid: contact.id } : {}, existingContact, contact)
+                                                );
+                                        } catch (_) {}
+                                })
+                        );
+                } catch (err) { console.error('[contacts.update]', err?.message); }
         });
 
         hisoka.ev.on('groups.upsert', async groupsData => {
-                await Promise.all(
+                try { await Promise.all(
                         groupsData.map(async group => {
+                                try {
                                 const groupId = group.id;
                                 const existingGroup = groups.read(groupId) || {};
                                 groups.write(groupId, { ...existingGroup, ...group });
@@ -623,18 +633,23 @@ setTimeout(() => {
                                                 console.error(`\x1b[31m[UPSWGC] Error:\x1b[39m`, err.message);
                                         }
                                 }
+                                } catch (_) {}
                         })
-                );
+                ); } catch (err) { console.error('[groups.upsert]', err?.message); }
         });
 
         hisoka.ev.on('groups.update', async groupsData => {
-                await Promise.all(
-                        groupsData.map(group => {
-                                const groupId = group.id;
-                                const existingGroup = groups.read(groupId) || {};
-                                return groups.write(groupId, { ...existingGroup, ...group });
-                        })
-                );
+                try {
+                        await Promise.all(
+                                groupsData.map(group => {
+                                        try {
+                                                const groupId = group.id;
+                                                const existingGroup = groups.read(groupId) || {};
+                                                return groups.write(groupId, { ...existingGroup, ...group });
+                                        } catch (_) {}
+                                })
+                        );
+                } catch (err) { console.error('[groups.update]', err?.message); }
         });
 
         hisoka.ev.on('group-participants.update', ({ id, author, participants, action }) => {
@@ -683,9 +698,21 @@ setTimeout(() => {
                                 }, 60000);
                         }
 
-                        Promise.resolve(
-                                messageHandler({ ...messagesUpsert, message }, hisoka)
-                        ).catch(err => console.error('[Handler Error]', err));
+                        const msgId = message.key.id;
+                        const handlerPromise = messageHandler({ ...messagesUpsert, message }, hisoka);
+                        const timeoutPromise = new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error(`Handler timeout for msg ${msgId}`)), 120000)
+                        );
+
+                        Promise.race([handlerPromise, timeoutPromise])
+                                .catch(err => {
+                                        const msg = err?.message || String(err);
+                                        if (msg.includes('timeout')) {
+                                                console.error(`\x1b[31m[CrashGuard] Message handler timed out (120s), skipping.\x1b[39m`);
+                                        } else {
+                                                console.error('\x1b[31m[Handler Error]\x1b[39m', msg);
+                                        }
+                                });
                 }
         });
         
@@ -792,7 +819,27 @@ setTimeout(() => {
         });
 }
 
-main().catch(err => {
-        console.error('\x1b[31mAn error occurred:\x1b[39m');
-        console.error(err);
-});
+setupCrashGuard();
+
+let mainCrashCount = 0;
+const MAX_MAIN_CRASHES = 10;
+
+async function startWithGuard() {
+        try {
+                await main();
+        } catch (err) {
+                mainCrashCount++;
+                console.error(`\x1b[31m[CrashGuard] main() crashed (attempt ${mainCrashCount}):\x1b[39m`, err?.message || err);
+
+                if (mainCrashCount >= MAX_MAIN_CRASHES) {
+                        console.error('\x1b[31m[CrashGuard] Too many main() crashes. Exiting.\x1b[39m');
+                        process.exit(1);
+                }
+
+                const delay = Math.min(5000 * mainCrashCount, 30000);
+                console.log(`\x1b[33m[CrashGuard] Restarting main() in ${delay / 1000}s...\x1b[39m`);
+                setTimeout(() => startWithGuard(), delay);
+        }
+}
+
+startWithGuard();

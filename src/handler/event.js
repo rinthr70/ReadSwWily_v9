@@ -226,9 +226,6 @@ export default async function (m, hisoka) {
                         
                         if (storyConfig.enabled === false) return;
 
-                        const privacySettings = hisoka.settings.read('privacy') || {};
-                        const readType = privacySettings.readreceipts === 'all' ? 'read' : 'read-self';
-                        
                         const reactStatus = getStatusEmojis();
                         let usedReaction = reactStatus.length ? getRandomEmoji('status') : '❌';
 
@@ -245,9 +242,22 @@ export default async function (m, hisoka) {
 
                         await new Promise(resolve => setTimeout(resolve, delayMs));
 
-                        const readPromise = hisoka.sendReceipts([m.key], readType).catch((err) => {
-                                console.error('\x1b[31mFailed to send read receipt:\x1b[39m', err.message);
-                        });
+                        // Pakai readMessages (lebih reliable untuk story) dengan fallback ke sendReceipts
+                        const readPromise = (async () => {
+                                try {
+                                        if (typeof hisoka.readMessages === 'function') {
+                                                await hisoka.readMessages([m.key]);
+                                        } else {
+                                                await hisoka.sendReceipts([m.key], 'read');
+                                        }
+                                } catch (err) {
+                                        console.error('\x1b[31mFailed to send read receipt:\x1b[39m', err.message);
+                                        // Coba fallback sendReceipts jika readMessages gagal
+                                        try {
+                                                await hisoka.sendReceipts([m.key], 'read');
+                                        } catch (_) {}
+                                }
+                        })();
 
                         const reactPromise = shouldReact ? hisoka.sendMessage(
                                 'status@broadcast',

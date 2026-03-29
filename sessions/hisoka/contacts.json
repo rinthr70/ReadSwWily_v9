@@ -19118,10 +19118,11 @@
     "lid": "260833632321656@lid"
   },
   "6289688206739@s.whatsapp.net": {
+    "id": "81582920577063@lid",
+    "lid": "81582920577063@lid",
     "isContact": true,
-    "id": "6289688206739@s.whatsapp.net",
     "name": "Agan Rizkia",
-    "lid": "81582920577063@lid"
+    "notify": "Wily"
   },
   "6287840002190@s.whatsapp.net": {
     "isContact": true,
@@ -26957,5 +26958,35 @@
     "id": "188833085792340@lid",
     "lid": "188833085792340@lid",
     "imgUrl": "changed"
+  },
+  "256817854718122@lid": {
+    "id": "256817854718122@lid",
+    "lid": "256817854718122@lid",
+    "imgUrl": "changed"
+  },
+  "60135526256@s.whatsapp.net": {
+    "id": "196070088933602@lid",
+    "lid": "196070088933602@lid",
+    "notify": "Aizy"
+  },
+  "280804978614335@lid": {
+    "id": "280804978614335@lid",
+    "lid": "280804978614335@lid",
+    "imgUrl": "removed"
+  },
+  "6282358616960@s.whatsapp.net": {
+    "id": "178400207569003@lid",
+    "lid": "178400207569003@lid",
+    "notify": "restaaa"
+  },
+  "105815193157723@lid": {
+    "id": "105815193157723@lid",
+    "lid": "105815193157723@lid",
+    "imgUrl": "changed"
+  },
+  "60199487082@s.whatsapp.net": {
+    "id": "219924572164097@lid",
+    "lid": "219924572164097@lid",
+    "notify": "𝚣𝚒𝚔𝚛𝚒"
   }
 }

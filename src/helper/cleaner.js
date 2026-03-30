@@ -15,6 +15,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { cleanOldSwCache } from './swCache.js';
 
 const tmpDir = path.join(process.cwd(), 'tmp');
 
@@ -174,9 +175,11 @@ export function startAutoCleaner(intervalHours = 6) {
     console.log(`\x1b[32m[Cleaner]\x1b[39m Auto-cleaner started (every ${intervalHours}h)`);
     
     clearOldFiles(24);
+    cleanOldSwCache();
     
     const interval = setInterval(() => {
         clearOldFiles(6);
+        cleanOldSwCache();
     }, intervalHours * 60 * 60 * 1000);
 
     return interval;

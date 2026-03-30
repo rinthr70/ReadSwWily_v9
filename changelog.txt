@@ -1,0 +1,85 @@
+> ═══════════════════════════════════
+> 📋 *CHANGELOG WILY-BOT*
+> ═══════════════════════════════════
+
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+> 🔧 *PERBAIKAN (BUG FIX)*
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+> 📌 *Auto Read Story (AutoReadStory)*
+> └ Masalah: Story orang tidak tertandai sudah dibaca
+> └ Penyebab: `readMessages()` di Baileys masih ikut
+>   privacy setting → kirim `read-self` bukan `read`
+> └ Fix: Bypass `readMessages`, kirim langsung
+>   `sendReceipts` dengan 2 jenis sekaligus:
+>   • `read` → notif ke poster story sudah dilihat
+>   • `read-self` → sinkronisasi ke akun sendiri
+>     agar WA Web/HP kita tandai sudah dibaca
+> └ Tambahan: `participant` kini pakai `m.sender`
+>   yg sudah di-resolve dari format LID ke nomor HP
+
+> 📌 *Command .addemoji / .delemoji / .listemoji*
+> └ Masalah: Command tidak merespon walau ada di menu
+> └ Penyebab: Switch case pakai nama `add`, `del`,
+>   `list` — tidak cocok dengan nama command
+> └ Fix: Case disamakan jadi `addemoji`, `delemoji`,
+>   `listemoji` sesuai nama yang diketik user
+
+> 📌 *Command .online off (Stealth Mode)*
+> └ Masalah: `.online off` menghentikan interval
+>   sepenuhnya, bukan beralih ke stealth mode
+> └ Fix: Sekarang tetap jalankan interval tapi kirim
+>   `unavailable` agar terlihat offline secara konsisten
+
+> 📌 *Instagram Downloader*
+> └ URL dibersihkan sebelum dikirim ke API
+>   (hapus `?img_index=` dll)
+> └ 3 API fallback dicoba secara berurutan
+> └ Deteksi tipe media per-item untuk carousel
+>   (foto & video ditangani terpisah)
+
+> 📌 *Log Konsol AutoOnline*
+> └ Hapus info interval `- Interval: 15s` dari log
+> └ Tampilan sekarang: `[AutoOnline] Started - Mode: ONLINE`
+
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+> ✨ *FITUR BARU*
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+> 📌 *Crash Guard System*
+> └ File: `src/helper/crashGuard.js`
+> └ Handler global `uncaughtException` &
+>   `unhandledRejection` agar bot tidak mati
+> └ Timeout 120 detik per pesan
+> └ Auto-restart `main()` dengan exponential backoff
+
+> 📌 *Command .backup (Owner Only)*
+> └ Zip seluruh file bot secara real-time
+> └ Dikecualikan otomatis:
+>   `attached_assets`, `.git`, `.agents`, `sessions`,
+>   `.upm`, `node_modules`, `package-lock.json`,
+>   `.cache`, `.local`
+> └ Nama file: `Readsw_<timestamp>.zip`
+> └ Tampilan rapi dengan detail isi tiap folder:
+>   contoh `src/ → 12 file, 4 folder`
+> └ Zip dikirim ke semua nomor owner di config.json
+> └ Ada reaction ⏳ saat mulai & ✅ saat selesai
+> └ Tersedia di menu: `.backup`
+
+> 📌 *Multi Owner Support*
+> └ `config.json` kini mendukung lebih dari 1 owner
+> └ Semua fitur owner (termasuk `.backup`) berlaku
+>   untuk semua nomor yang terdaftar
+
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+> ⚙️ *PERUBAHAN TEKNIS*
+> ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+> └ Package baru: `archiver` (untuk fitur .backup)
+> └ Jumlah command: 68 → *72 command*
+> └ Auto Read Story kini tidak bergantung pada
+>   privacy setting WhatsApp sama sekali
+
+> ═══════════════════════════════════
+> 🤖 *Wily-Bot* — Updated 30 Mar 2026
+> ═══════════════════════════════════

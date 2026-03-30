@@ -19149,14 +19149,13 @@
     "lid": "260833632321656@lid"
   },
   "6289688206739@s.whatsapp.net": {
-    "id": "6289688206739@s.whatsapp.net",
+    "id": "81582920577063@lid",
     "lid": "81582920577063@lid",
     "isContact": true,
     "name": "Agan Rizkia",
     "notify": "Wily",
     "ephemeralSettingTimestamp": 1765778951,
-    "ephemeralDuration": 86400,
-    "verifiedName": "Wily"
+    "ephemeralDuration": 86400
   },
   "6287840002190@s.whatsapp.net": {
     "isContact": true,
@@ -22048,7 +22047,9 @@
     "isContact": true,
     "name": "Hen V1",
     "imgUrl": "changed",
-    "notify": "Hen V1"
+    "notify": "Hen V1",
+    "ephemeralSettingTimestamp": 0,
+    "ephemeralDuration": 0
   },
   "6287794943512@s.whatsapp.net": {
     "isContact": true,
@@ -22725,10 +22726,13 @@
     "lid": "186917043855582@lid"
   },
   "6285188150676@s.whatsapp.net": {
+    "id": "3638558740716@lid",
+    "lid": "3638558740716@lid",
     "isContact": true,
-    "id": "6285188150676@s.whatsapp.net",
     "name": "γυς ρου [ NOKOS 2 ]",
-    "lid": "3638558740716@lid"
+    "notify": "γυς ρου_",
+    "ephemeralSettingTimestamp": 1774850828,
+    "ephemeralDuration": 86400
   },
   "6281315974293@s.whatsapp.net": {
     "isContact": true,
@@ -27409,6 +27413,16 @@
   "39466722926634@lid": {
     "id": "39466722926634@lid",
     "lid": "39466722926634@lid",
+    "imgUrl": "changed"
+  },
+  "601159947565@s.whatsapp.net": {
+    "id": "169947862925485@lid",
+    "lid": "169947862925485@lid",
+    "notify": "NAUFAL_BOT👾"
+  },
+  "184306207039714@lid": {
+    "id": "184306207039714@lid",
+    "lid": "184306207039714@lid",
     "imgUrl": "changed"
   }
 }

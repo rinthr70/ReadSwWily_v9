@@ -7,7 +7,7 @@
     "name": "Arga ( 3 )"
   },
   "6289667923162@s.whatsapp.net": {
-    "id": "97968623505429@lid",
+    "id": "6289667923162@s.whatsapp.net",
     "lid": "97968623505429@lid",
     "isContact": true,
     "notify": "Hen V2",
@@ -244,12 +244,12 @@
     "lid": "50930259099756@lid"
   },
   "628388589625@s.whatsapp.net": {
-    "id": "82828679200798@lid",
-    "lid": "82828679200798@lid",
     "isContact": true,
+    "id": "628388589625@s.whatsapp.net",
+    "lid": "82828679200798@lid",
     "name": "Kameriarikato ( Donasi Bot )",
     "notify": "𝙢𝙖𝙪𝙡𝙖𝙣𝙖 𝙣𝙜𝙚𝙣",
-    "ephemeralSettingTimestamp": 1720485,
+    "ephemeralSettingTimestamp": 1731884751,
     "ephemeralDuration": 86400
   },
   "6283826157296@s.whatsapp.net": {
@@ -25086,12 +25086,10 @@
     "lid": "124051825643651@lid"
   },
   "6283111161657@s.whatsapp.net": {
-    "id": "41309716902084@lid",
-    "lid": "41309716902084@lid",
     "isContact": true,
+    "id": "6283111161657@s.whatsapp.net",
     "name": "Lynne~",
-    "notify": "f",
-    "verifiedName": "f"
+    "lid": "41309716902084@lid"
   },
   "6289508613017@s.whatsapp.net": {
     "isContact": true,
@@ -27307,7 +27305,7 @@
   "146162266931424@lid": {
     "id": "146162266931424@lid",
     "lid": "146162266931424@lid",
-    "imgUrl": "changed"
+    "imgUrl": "removed"
   },
   "263445207371837@lid": {
     "id": "263445207371837@lid",

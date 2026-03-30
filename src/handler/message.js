@@ -21,7 +21,6 @@ import { exec } from 'child_process';
 import util from 'util';
 
 import { msToTime, loadConfig, saveConfig } from '../helper/utils.js';
-import { getSwEntries, formatBytes, getTypeInfo } from '../helper/swCache.js';
 import { getUptimeFormatted, getBotStats } from '../db/botStats.js';
 import { startJadibot, stopJadibot, jadibotMap } from '../helper/jadibot.js';
 import { hasViewOnceCache, getViewOnceCache } from '../helper/voCache.js';
@@ -58,9 +57,6 @@ function logCommand(m, hisoka, command) {
         const location = m.isGroup ? `"${hisoka.getName(m.from)}"` : 'Private Chat';
         console.log(`\x1b[32m[CMD]\x1b[39m \x1b[36m.${command}\x1b[39m - ${m.pushName} @ ${location}`);
 }
-
-// Pending listsw selection: key = sender JID, value = array of SW entries shown
-const pendingListSW = new Map();
 
 function extractMediaFromMessage(quotedMsg) {
         let targetMessage = quotedMsg;
@@ -284,49 +280,6 @@ CONTOH NYAMBUNG:
 
                 if (hisoka?.isMainBot === false) {
                     if (!isAllowedForJadibot(m, hisoka)) return;
-                }
-
-                // Handler: reply angka setelah .listsw (private chat saja)
-                if (!m.isGroup && pendingListSW.has(m.from)) {
-                        const rawText = (m.text || '').trim();
-                        const choiceNum = parseInt(rawText);
-                        const pendingEntries = pendingListSW.get(m.from);
-                        if (!isNaN(choiceNum) && choiceNum >= 1 && choiceNum <= pendingEntries.length) {
-                                pendingListSW.delete(m.from);
-                                const chosen = pendingEntries[choiceNum - 1];
-                                try {
-                                        await hisoka.sendMessage(m.from, { react: { text: '⏳', key: m.key } });
-                                        const dlMsg = {
-                                                key: chosen.key,
-                                                message: chosen.message,
-                                        };
-                                        const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage'];
-                                        const foundType = mediaTypes.find(t => chosen.message?.[t]);
-                                        if (!foundType) {
-                                                await m.reply('❌ Media tidak tersedia (mungkin sudah kadaluwarsa).');
-                                        } else {
-                                                const buf = await downloadMediaMessage(
-                                                        dlMsg, 'buffer', {},
-                                                        { logger: hisoka.logger, reuploadRequest: hisoka.updateMediaMessage }
-                                                );
-                                                const mediaMsg = chosen.message[foundType];
-                                                const typeInfo = getTypeInfo(foundType);
-                                                const timeStr = new Date(chosen.timestamp).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
-                                                const caption = `╭═══『 *📋 LISTSW #${choiceNum}* 』═══╮\n│\n│ *${typeInfo.emoji} Type:* ${typeInfo.label}\n│ *📱 Dari:* ${chosen.pushName}\n│ *📦 Ukuran:* ${formatBytes(chosen.fileLength)}\n│ *⏰ Waktu:* ${timeStr} WIB\n│ *💬 Caption:* ${mediaMsg.caption || '-'}\n│\n╰═════════════════════╯`;
-                                                let sendOpt = {};
-                                                if (foundType === 'imageMessage') sendOpt = { image: buf, caption };
-                                                else if (foundType === 'videoMessage') sendOpt = { video: buf, caption };
-                                                else if (foundType === 'audioMessage') sendOpt = { audio: buf, mimetype: mediaMsg.mimetype || 'audio/ogg; codecs=opus', ptt: mediaMsg.ptt || false };
-                                                else if (foundType === 'documentMessage') sendOpt = { document: buf, caption, mimetype: mediaMsg.mimetype || 'application/octet-stream', fileName: mediaMsg.fileName || 'story_file' };
-                                                await hisoka.sendMessage(m.from, sendOpt);
-                                                await hisoka.sendMessage(m.from, { react: { text: '✅', key: m.key } });
-                                        }
-                                } catch (err) {
-                                        await hisoka.sendMessage(m.from, { react: { text: '❌', key: m.key } });
-                                        await m.reply(`❌ Gagal ambil SW: ${err.message}`);
-                                }
-                                return;
-                        }
                 }
 
                 switch (m.command) {
@@ -567,7 +520,6 @@ ${readMore}
 │ ∘ .recording
 │ ∘ .online
 │ ∘ .readsw
-│ ∘ .listsw
 │ ∘ .addemoji
 │ ∘ .delemoji
 │ ∘ .listemoji
@@ -1233,86 +1185,6 @@ _📖 Story berhasil diambil!_`;
                                         console.error('\x1b[31m[GETSW] Error:\x1b[39m', error.message);
                                         await hisoka.sendMessage(m.from, { react: { text: '❌', key: m.key } });
                                         await m.reply(`❌ Gagal mengambil story: ${error.message}`);
-                                }
-                                break;
-                        }
-
-                        case 'listsw': {
-                                try {
-                                        if (m.isGroup) {
-                                                await m.reply('❌ Fitur *listsw* hanya bisa digunakan di private chat, bukan di grup!');
-                                                break;
-                                        }
-
-                                        const allEntries = getSwEntries();
-
-                                        if (allEntries.length === 0) {
-                                                await m.reply('📭 *Belum ada story/status* yang masuk sejak bot terakhir nyala.\n\nBot akan otomatis menyimpan story yang masuk, coba lagi nanti!');
-                                                break;
-                                        }
-
-                                        const now = Date.now();
-                                        // Filter hanya yg masih dalam 24 jam (status WA kadaluwarsa 24 jam)
-                                        const validEntries = allEntries.filter(e => now - e.timestamp < 24 * 60 * 60 * 1000);
-
-                                        if (validEntries.length === 0) {
-                                                await m.reply('📭 *Semua story sudah kadaluwarsa* (lebih dari 24 jam).\n\nTunggu story baru masuk!');
-                                                break;
-                                        }
-
-                                        // Hitung total ukuran
-                                        const totalSize = validEntries.reduce((sum, e) => sum + (Number(e.fileLength) || 0), 0);
-
-                                        // Hitung distribusi type
-                                        const typeCounts = {};
-                                        for (const e of validEntries) {
-                                                const label = getTypeInfo(e.type).label;
-                                                typeCounts[label] = (typeCounts[label] || 0) + 1;
-                                        }
-                                        const typeDistrib = Object.entries(typeCounts).map(([label, count]) => `${label}(${count})`).join(', ');
-
-                                        let text = `╭═══『 *📋 LIST STORY/STATUS* 』═══╮\n`;
-                                        text += `│\n`;
-                                        text += `│ *📊 Total:* ${validEntries.length} story\n`;
-                                        text += `│ *📦 Total Ukuran:* ${formatBytes(totalSize)}\n`;
-                                        text += `│ *🗂️ Type:* ${typeDistrib}\n`;
-                                        text += `│ *🕒 Data sejak:* Bot nyala\n`;
-                                        text += `│\n`;
-                                        text += `╰═════════════════════╯\n\n`;
-                                        text += `*Daftar Story (terbaru dulu):*\n\n`;
-
-                                        const MAX_SHOW = 20;
-                                        const shown = validEntries.slice(0, MAX_SHOW);
-                                        for (let i = 0; i < shown.length; i++) {
-                                                const e = shown[i];
-                                                const typeInfo = getTypeInfo(e.type);
-                                                const timeStr = new Date(e.timestamp).toLocaleString('id-ID', {
-                                                        timeZone: 'Asia/Jakarta',
-                                                        hour: '2-digit', minute: '2-digit',
-                                                        day: '2-digit', month: 'short'
-                                                });
-                                                const sizeStr = formatBytes(e.fileLength);
-                                                const captionSnip = e.caption ? ` — _${e.caption.substring(0, 30)}${e.caption.length > 30 ? '...' : ''}_` : '';
-                                                text += `*${i + 1}.* ${typeInfo.emoji} *${e.pushName}*\n`;
-                                                text += `    📦 ${sizeStr}  ⏰ ${timeStr} WIB${captionSnip}\n\n`;
-                                        }
-
-                                        if (validEntries.length > MAX_SHOW) {
-                                                text += `_...dan ${validEntries.length - MAX_SHOW} story lainnya (hanya 20 terbaru ditampilkan)_\n\n`;
-                                        }
-
-                                        text += `💡 *Balas pesan ini dengan nomor* (contoh: *1*) untuk mengambil story tersebut!`;
-
-                                        // Simpan ke pending agar bisa handle reply angka
-                                        pendingListSW.set(m.from, shown);
-                                        // Auto hapus pending setelah 3 menit
-                                        setTimeout(() => pendingListSW.delete(m.from), 3 * 60 * 1000);
-
-                                        await m.reply(text);
-                                        logCommand(m, hisoka, 'listsw');
-                                } catch (error) {
-                                        console.error('\x1b[31m[LISTSW] Error:\x1b[39m', error.message);
-                                        await m.reply(`❌ Gagal: ${error.message}`);
                                 }
                                 break;
                         }

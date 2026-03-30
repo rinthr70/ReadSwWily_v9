@@ -25,6 +25,8 @@ import makeWASocket, {
         fetchLatestBaileysVersion,
         jidNormalizedUser,
         jidDecode,
+        downloadMediaMessage,
+        getContentType,
 } from 'baileys';
 import pino from 'pino';
 import { Boom } from '@hapi/boom';
@@ -38,10 +40,56 @@ import { MemoryMonitor } from './src/helper/memoryMonitor.js';
 import { getPhoneRegion, formatPhoneWithRegion } from './src/helper/phoneRegion.js';
 import { ensureTmpDir, startAutoCleaner } from './src/helper/cleaner.js'; // ini baru
 import { startJadibot, jadibotMap } from './src/helper/jadibot.js';
+import { saveViewOnceCache, cleanOldViewOnceCache, hasViewOnceCache } from './src/helper/voCache.js';
 // ini baru - yg bawah pindah ke sini
 import messageHandler from './src/handler/message.js';
 import handleDeletedMessage from './src/handler/antidelete.js';
 import { setupCrashGuard } from './src/helper/crashGuard.js';
+
+/* ================= VOONCE AUTO-SAVE ================= */
+async function autoSaveViewOnce(message, hisoka) {
+        const msg = message.message
+        if (!msg) return
+
+        let targetMsg = msg
+        let isVO = false
+
+        if (targetMsg.ephemeralMessage?.message) targetMsg = targetMsg.ephemeralMessage.message
+
+        if (targetMsg.viewOnceMessage?.message) { targetMsg = targetMsg.viewOnceMessage.message; isVO = true }
+        else if (targetMsg.viewOnceMessageV2?.message) { targetMsg = targetMsg.viewOnceMessageV2.message; isVO = true }
+        else if (targetMsg.viewOnceMessageV2Extension?.message) { targetMsg = targetMsg.viewOnceMessageV2Extension.message; isVO = true }
+
+        if (!isVO) return
+
+        const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage']
+        const mediaType = getContentType(targetMsg)
+        if (!mediaTypes.includes(mediaType)) return
+
+        const msgId = message.key.id
+        if (hasViewOnceCache(msgId)) return
+
+        try {
+                const buffer = await downloadMediaMessage(
+                        { ...message, message: targetMsg },
+                        'buffer',
+                        {},
+                        { logger: hisoka.logger, reuploadRequest: hisoka.updateMediaMessage }
+                )
+                const content = targetMsg[mediaType]
+                saveViewOnceCache(msgId, buffer, {
+                        mediaType,
+                        mimetype: content?.mimetype || '',
+                        caption: content?.caption || '',
+                        ptt: content?.ptt || false,
+                        fileName: content?.fileName || '',
+                        senderName: message.pushName || '',
+                        from: message.key.remoteJid || '',
+                })
+        } catch (err) {
+                // Silent — jangan ganggu alur pesan
+        }
+}
 
 /* ================= JADIBOT GLOBAL STATE ================= */
 global.autoStartedJadibot = new Set();
@@ -429,6 +477,7 @@ async function main() {
 
                         ensureTmpDir();
                         startAutoCleaner(6); // ini tambahan
+                        cleanOldViewOnceCache(); // hapus cache vo lama (>7 hari)
                         
                         /* ===================== AUTO START SEMUA JADIBOT (STABIL) ===================== */
 const jadibotDir = path.join(process.cwd(), 'jadibot');
@@ -696,6 +745,11 @@ setTimeout(() => {
                                 setTimeout(() => {
                                         hisoka.cacheMsg.delete(message.key.id);
                                 }, 60000);
+                        }
+
+                        // Auto-save view once ke disk agar tetap bisa dibuka setelah restart
+                        if (message.message) {
+                                autoSaveViewOnce(message, hisoka).catch(() => {})
                         }
 
                         const msgId = message.key.id;

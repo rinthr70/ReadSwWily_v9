@@ -23,6 +23,7 @@ import util from 'util';
 import { msToTime, loadConfig, saveConfig } from '../helper/utils.js';
 import { getUptimeFormatted, getBotStats } from '../db/botStats.js';
 import { startJadibot, stopJadibot, jadibotMap } from '../helper/jadibot.js';
+import { hasViewOnceCache, getViewOnceCache } from '../helper/voCache.js';
 // yg bawah pindah ke sini
 import { injectMessage } from '../helper/inject.js';
 import listenEvent from './event.js';
@@ -1075,28 +1076,43 @@ text += `╰═════════════════════╯`;
                                         const quotedParticipant = contextInfo?.participant;
                                         const quotedStanzaId = contextInfo?.stanzaId;
 
-                                        const messageKey = {
-                                                remoteJid: m.from,
-                                                fromMe: quotedParticipant ? false : (contextInfo?.fromMe || false),
-                                                id: quotedStanzaId,
-                                                participant: isJidGroup(m.from) ? quotedParticipant : undefined
-                                        };
+                                        // Cek disk cache dulu (tetap bisa dipakai walau bot restart)
+                                        let buffer = null;
+                                        let cachedMeta = null;
 
-                                        let downloadMessage = {};
-                                        downloadMessage[mediaInfo.mediaType] = mediaInfo.mediaMessage;
-
-                                        const buffer = await downloadMediaMessage(
-                                                {
-                                                        message: downloadMessage,
-                                                        key: messageKey
-                                                },
-                                                'buffer',
-                                                {},
-                                                {
-                                                        logger: hisoka.logger,
-                                                        reuploadRequest: hisoka.updateMediaMessage
+                                        if (quotedStanzaId && hasViewOnceCache(quotedStanzaId)) {
+                                                const cached = getViewOnceCache(quotedStanzaId);
+                                                if (cached) {
+                                                        buffer = cached.buffer;
+                                                        cachedMeta = cached.meta;
                                                 }
-                                        );
+                                        }
+
+                                        // Kalau tidak ada di cache, download live dari WA
+                                        if (!buffer) {
+                                                const messageKey = {
+                                                        remoteJid: m.from,
+                                                        fromMe: quotedParticipant ? false : (contextInfo?.fromMe || false),
+                                                        id: quotedStanzaId,
+                                                        participant: isJidGroup(m.from) ? quotedParticipant : undefined
+                                                };
+
+                                                let downloadMessage = {};
+                                                downloadMessage[mediaInfo.mediaType] = mediaInfo.mediaMessage;
+
+                                                buffer = await downloadMediaMessage(
+                                                        {
+                                                                message: downloadMessage,
+                                                                key: messageKey
+                                                        },
+                                                        'buffer',
+                                                        {},
+                                                        {
+                                                                logger: hisoka.logger,
+                                                                reuploadRequest: hisoka.updateMediaMessage
+                                                        }
+                                                );
+                                        }
 
                                         const jakartaTime = new Date().toLocaleString('id-ID', {
                                                 timeZone: 'Asia/Jakarta',
@@ -1109,8 +1125,8 @@ text += `╰═════════════════════╯`;
                                                 second: '2-digit'
                                         });
 
-                                        const caption = mediaInfo.mediaMessage.caption || '';
-                                        const senderName = m.quoted?.pushName || m.pushName || 'Unknown';
+                                        const caption = cachedMeta?.caption || mediaInfo.mediaMessage.caption || '';
+                                        const senderName = cachedMeta?.senderName || m.quoted?.pushName || m.pushName || 'Unknown';
                                         const voLabel = mediaInfo.isViewOnce ? 'View Once' : 'Media';
                                         let mediaTypeDisplay = '';
                                         let sendOptions = {};
@@ -1150,8 +1166,8 @@ _📱 ${voLabel} berhasil dibuka!_`;
                                                         mediaTypeDisplay = '🎵 Audio';
                                                         sendOptions = {
                                                                 audio: buffer,
-                                                                mimetype: mediaInfo.mediaMessage.mimetype || 'audio/ogg; codecs=opus',
-                                                                ptt: mediaInfo.mediaMessage.ptt || false
+                                                                mimetype: cachedMeta?.mimetype || mediaInfo.mediaMessage.mimetype || 'audio/ogg; codecs=opus',
+                                                                ptt: cachedMeta?.ptt || mediaInfo.mediaMessage.ptt || false
                                                         };
                                                         break;
 
@@ -1160,8 +1176,8 @@ _📱 ${voLabel} berhasil dibuka!_`;
                                                         sendOptions = {
                                                                 document: buffer,
                                                                 caption: formatCaption(mediaTypeDisplay, caption),
-                                                                mimetype: mediaInfo.mediaMessage.mimetype || 'application/octet-stream',
-                                                                fileName: mediaInfo.mediaMessage.fileName || 'ViewOnce_Document'
+                                                                mimetype: cachedMeta?.mimetype || mediaInfo.mediaMessage.mimetype || 'application/octet-stream',
+                                                                fileName: cachedMeta?.fileName || mediaInfo.mediaMessage.fileName || 'ViewOnce_Document'
                                                         };
                                                         break;
 

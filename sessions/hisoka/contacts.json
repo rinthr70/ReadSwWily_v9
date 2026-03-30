@@ -1,8 +1,8 @@
 {
   "6289525090200@s.whatsapp.net": {
-    "isContact": true,
-    "id": "6289525090200@s.whatsapp.net",
+    "id": "23459681820689@lid",
     "lid": "23459681820689@lid",
+    "isContact": true,
     "notify": "Enanan",
     "name": "Arga ( 3 )"
   },
@@ -27844,5 +27844,15 @@
     "id": "6282187068875@s.whatsapp.net",
     "name": "¥ Banned +",
     "lid": "182149563035805@lid"
+  },
+  "168736715731040@lid": {
+    "id": "168736715731040@lid",
+    "lid": "168736715731040@lid",
+    "imgUrl": "changed"
+  },
+  "6283878562983@s.whatsapp.net": {
+    "id": "6051994828936@lid",
+    "lid": "6051994828936@lid",
+    "notify": "abian - หล่อ"
   }
 }

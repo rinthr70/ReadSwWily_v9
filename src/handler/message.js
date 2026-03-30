@@ -1194,7 +1194,7 @@ _📱 ${voLabel} berhasil dibuka!_`;
                                                         throw new Error(`Unsupported media type: ${mediaInfo.mediaType}`);
                                         }
 
-                                        await hisoka.sendMessage(m.from, sendOptions, { quoted: m.message });
+                                        await hisoka.sendMessage(m.from, sendOptions, { quoted: m });
 
                                         await hisoka.sendMessage(m.from, { react: { text: '✅', key: m.key } });
 

@@ -70,6 +70,7 @@ async function autoSaveViewOnce(message, hisoka) {
         if (hasViewOnceCache(msgId)) return
 
         try {
+                console.log(`\x1b[36m[VOCache]\x1b[0m Mencoba simpan view once: ${msgId} (${mediaType})`)
                 const buffer = await downloadMediaMessage(
                         { ...message, message: targetMsg },
                         'buffer',
@@ -87,7 +88,7 @@ async function autoSaveViewOnce(message, hisoka) {
                         from: message.key.remoteJid || '',
                 })
         } catch (err) {
-                // Silent — jangan ganggu alur pesan
+                console.error(`\x1b[31m[VOCache] Gagal simpan ${msgId}:\x1b[0m`, err.message)
         }
 }
 

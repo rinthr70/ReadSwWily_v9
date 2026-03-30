@@ -4,27 +4,71 @@ import fs from 'fs';
 import path from 'path';
 
 const CACHE_DIR = path.join(process.cwd(), 'tmp', 'swcache');
-const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 jam (sesuai masa berlaku status WA)
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_ENTRIES = 200;
 
-function ensureDir() {
-        if (!fs.existsSync(CACHE_DIR)) {
-                fs.mkdirSync(CACHE_DIR, { recursive: true });
+// ─── Long (protobuf int64) → number ──────────────────────────────────────────
+function longToNumber(val) {
+        if (val == null) return 0;
+        if (typeof val === 'number') return val;
+        if (typeof val === 'bigint') return Number(val);
+        // Long object: { low, high, unsigned }
+        if (typeof val === 'object' && ('low' in val || 'high' in val)) {
+                const lo = (val.low >>> 0);
+                const hi = (val.high >>> 0);
+                return hi * 4294967296 + lo;
         }
+        return Number(val) || 0;
+}
+
+// ─── Buffer-safe JSON serializer / deserializer ───────────────────────────────
+function safeReplacer(key, val) {
+        // Buffer (Node.js) → {__buf: "base64"}
+        if (val && typeof val === 'object' && val.type === 'Buffer' && Array.isArray(val.data)) {
+                return { __buf: Buffer.from(val.data).toString('base64') };
+        }
+        // Buffer instance (non-toJSON path)
+        if (Buffer.isBuffer(val)) {
+                return { __buf: val.toString('base64') };
+        }
+        // Long object
+        if (val && typeof val === 'object' && typeof val.low === 'number' && typeof val.high === 'number') {
+                return longToNumber(val);
+        }
+        return val;
+}
+
+function safeReviver(key, val) {
+        // Restore Buffer
+        if (val && typeof val === 'object' && typeof val.__buf === 'string') {
+                return Buffer.from(val.__buf, 'base64');
+        }
+        return val;
+}
+
+function safeStringify(obj) {
+        return JSON.stringify(obj, safeReplacer);
+}
+
+function safeParse(str) {
+        return JSON.parse(str, safeReviver);
+}
+
+// ─── Disk helpers ─────────────────────────────────────────────────────────────
+function ensureDir() {
+        if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
+}
+
+function makeFileId(entry) {
+        const keyId = entry.key?.id || String(Date.now());
+        return keyId.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80);
 }
 
 function entryPath(id) {
         return path.join(CACHE_DIR, `${id}.json`);
 }
 
-// Buat ID unik dari key message
-function makeId(entry) {
-        const keyId = entry.key?.id || String(Date.now());
-        // Sanitize biar aman jadi nama file
-        return keyId.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80);
-}
-
-// Load semua entry dari disk (dipanggil saat modul pertama kali dimuat)
+// ─── Load dari disk saat startup ─────────────────────────────────────────────
 function loadFromDisk() {
         ensureDir();
         const now = Date.now();
@@ -34,41 +78,43 @@ function loadFromDisk() {
         for (const file of files) {
                 try {
                         const raw = fs.readFileSync(path.join(CACHE_DIR, file), 'utf-8');
-                        const entry = JSON.parse(raw);
-                        // Buang yang sudah kadaluwarsa
+                        const entry = safeParse(raw);
                         if (now - entry.timestamp > MAX_AGE_MS) {
                                 fs.unlinkSync(path.join(CACHE_DIR, file));
                                 continue;
                         }
+                        // Pastikan fileLength selalu number
+                        entry.fileLength = longToNumber(entry.fileLength);
                         entries.push(entry);
                 } catch {}
         }
 
-        // Urutkan terbaru dulu
         entries.sort((a, b) => b.timestamp - a.timestamp);
         return entries;
 }
 
-// In-memory cache (diisi dari disk saat startup)
+// In-memory cache
 const swEntries = loadFromDisk();
 
+// ─── Public API ───────────────────────────────────────────────────────────────
 export function addSwEntry(entry) {
         ensureDir();
         const now = Date.now();
 
-        // Cek duplikat berdasarkan key.id
+        // Deduplikasi
         const keyId = entry.key?.id;
         if (keyId && swEntries.some(e => e.key?.id === keyId)) return;
 
-        swEntries.unshift(entry);
+        // Normalisasi fileLength ke number sebelum simpan
+        entry.fileLength = longToNumber(entry.fileLength);
 
-        // Buang yang melebihi batas
+        swEntries.unshift(entry);
         while (swEntries.length > MAX_ENTRIES) swEntries.pop();
 
-        // Simpan ke disk
+        // Simpan ke disk (Buffer-safe)
         try {
-                const id = makeId(entry);
-                fs.writeFileSync(entryPath(id), JSON.stringify(entry));
+                const id = makeFileId(entry);
+                fs.writeFileSync(entryPath(id), safeStringify(entry));
         } catch (err) {
                 console.error('\x1b[31m[SWCache] Gagal simpan:\x1b[0m', err.message);
         }
@@ -76,7 +122,6 @@ export function addSwEntry(entry) {
 
 export function getSwEntries() {
         const now = Date.now();
-        // Filter real-time: hanya yang masih dalam 24 jam
         return swEntries.filter(e => now - e.timestamp < MAX_AGE_MS);
 }
 
@@ -88,7 +133,6 @@ export function clearSwEntries() {
         } catch {}
 }
 
-// Cleanup file kadaluwarsa dari disk (dipanggil berkala)
 export function cleanOldSwCache() {
         try {
                 ensureDir();
@@ -98,7 +142,7 @@ export function cleanOldSwCache() {
                 for (const file of files) {
                         try {
                                 const raw = fs.readFileSync(path.join(CACHE_DIR, file), 'utf-8');
-                                const entry = JSON.parse(raw);
+                                const entry = safeParse(raw);
                                 if (now - entry.timestamp > MAX_AGE_MS) {
                                         fs.unlinkSync(path.join(CACHE_DIR, file));
                                         deleted++;
@@ -117,6 +161,7 @@ export function cleanOldSwCache() {
 export function formatBytes(bytes) {
         if (!bytes || bytes === 0) return 'N/A';
         const b = Number(bytes);
+        if (isNaN(b) || b === 0) return 'N/A';
         if (b < 1024) return `${b} B`;
         if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
         return `${(b / (1024 * 1024)).toFixed(2)} MB`;

@@ -1069,11 +1069,6 @@ text += `╰═════════════════════╯`;
                                                 break;
                                         }
 
-                                        if (!mediaInfo.isViewOnce) {
-                                                await m.reply('Pesan ini bukan view once. Gunakan command ini hanya untuk pesan view once.');
-                                                break;
-                                        }
-
                                         await hisoka.sendMessage(m.from, { react: { text: '⏳', key: m.key } });
 
                                         const contextInfo = m.content?.contextInfo;
@@ -1115,21 +1110,23 @@ text += `╰═════════════════════╯`;
                                         });
 
                                         const caption = mediaInfo.mediaMessage.caption || '';
+                                        const senderName = m.quoted?.pushName || m.pushName || 'Unknown';
+                                        const voLabel = mediaInfo.isViewOnce ? 'View Once' : 'Media';
                                         let mediaTypeDisplay = '';
                                         let sendOptions = {};
 
                                         const formatCaption = (type, originalCaption = '') => {
-                                                return `╭═══『 *📱 VIEW ONCE MEDIA* 』═══╮
+                                                return `╭═══『 *📱 ${voLabel.toUpperCase()} MEDIA* 』═══╮
 │
 │ *🎯 Type:* ${type}
 │ *⏰ Waktu:* ${jakartaTime} WIB
 │ *💬 Caption:* ${originalCaption || 'No caption'}
-│ *📱 Sender:* ${m.quoted?.pushName || m.pushName || 'Unknown'}
+│ *📱 Sender:* ${senderName}
 │ *✅ Status:* Berhasil dibuka
 │
 ╰═════════════════════╯
 
-_📱 View once berhasil dibuka!_`;
+_📱 ${voLabel} berhasil dibuka!_`;
                                         };
 
                                         switch (mediaInfo.mediaType) {
@@ -1179,8 +1176,7 @@ _📱 View once berhasil dibuka!_`;
                                                         throw new Error(`Unsupported media type: ${mediaInfo.mediaType}`);
                                         }
 
-                                        const myNumber = hisoka.user.id.split(':')[0] + '@s.whatsapp.net';
-                                        await hisoka.sendMessage(myNumber, sendOptions);
+                                        await hisoka.sendMessage(m.from, sendOptions, { quoted: m.message });
 
                                         await hisoka.sendMessage(m.from, { react: { text: '✅', key: m.key } });
 

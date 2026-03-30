@@ -244,12 +244,12 @@
     "lid": "50930259099756@lid"
   },
   "628388589625@s.whatsapp.net": {
-    "isContact": true,
-    "id": "628388589625@s.whatsapp.net",
+    "id": "82828679200798@lid",
     "lid": "82828679200798@lid",
+    "isContact": true,
     "name": "Kameriarikato ( Donasi Bot )",
     "notify": "𝙢𝙖𝙪𝙡𝙖𝙣𝙖 𝙣𝙜𝙚𝙣",
-    "ephemeralSettingTimestamp": 1731884751,
+    "ephemeralSettingTimestamp": 1720485,
     "ephemeralDuration": 86400
   },
   "6283826157296@s.whatsapp.net": {
@@ -22079,8 +22079,8 @@
     "name": "Hen V1",
     "imgUrl": "changed",
     "notify": "Hen V1",
-    "ephemeralSettingTimestamp": 1765778951,
-    "ephemeralDuration": 86400
+    "ephemeralSettingTimestamp": 0,
+    "ephemeralDuration": 0
   },
   "6287794943512@s.whatsapp.net": {
     "isContact": true,

@@ -655,6 +655,11 @@
     ]
   },
   "120363416720662222@g.us": {
-    "participants": []
+    "participants": [
+      {
+        "id": "228265230876926@lid",
+        "admin": null
+      }
+    ]
   }
 }

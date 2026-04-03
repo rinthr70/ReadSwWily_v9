@@ -40,12 +40,6 @@
     "privateChat": true,
     "groupChat": true
   },
-  "antiTagSW": {
-    "enabled": true,
-    "autoReply": true,
-    "message": "Hei kak! Tolong jangan tag bot di status WhatsApp ya 🙏",
-    "notifyOwner": true
-  },
   "telegram": {
     "enabled": false,
     "token": "",

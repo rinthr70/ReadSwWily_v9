@@ -9804,11 +9804,10 @@
     "lid": "87892311461961@lid"
   },
   "6289678522775@s.whatsapp.net": {
-    "id": "193020829909081@lid",
-    "lid": "193020829909081@lid",
     "isContact": true,
+    "id": "6289678522775@s.whatsapp.net",
     "name": "! Zacky Ariansyah",
-    "notify": "Zacky Ariansyah"
+    "lid": "193020829909081@lid"
   },
   "6285971759213@s.whatsapp.net": {
     "isContact": true,
@@ -11965,12 +11964,10 @@
     "lid": "3496338272482@lid"
   },
   "6289525090200@s.whatsapp.net": {
-    "id": "23459681820689@lid",
-    "lid": "23459681820689@lid",
     "isContact": true,
+    "id": "6289525090200@s.whatsapp.net",
     "name": "Arga ( 3 )",
-    "notify": "Enanan",
-    "verifiedName": "Enanan"
+    "lid": "23459681820689@lid"
   },
   "6285134037265@s.whatsapp.net": {
     "isContact": true,
@@ -12681,11 +12678,10 @@
     "lid": "222372300869770@lid"
   },
   "6288742843562@s.whatsapp.net": {
-    "id": "201215426228311@lid",
-    "lid": "201215426228311@lid",
     "isContact": true,
+    "id": "6288742843562@s.whatsapp.net",
     "name": "! Keyra !!!",
-    "notify": "＊ ᥴᥲᥣ᥊ᥡrᥲ ＊"
+    "lid": "201215426228311@lid"
   },
   "6282381139834@s.whatsapp.net": {
     "isContact": true,
@@ -24280,11 +24276,10 @@
     "lid": "35107582820506@lid"
   },
   "6285216433695@s.whatsapp.net": {
-    "id": "225670600900759@lid",
-    "lid": "225670600900759@lid",
     "isContact": true,
+    "id": "6285216433695@s.whatsapp.net",
     "name": "ラフィ",
-    "notify": "知らないし、気にしない。"
+    "lid": "225670600900759@lid"
   },
   "6285754380182@s.whatsapp.net": {
     "isContact": true,
@@ -25679,11 +25674,10 @@
     "lid": "212747514048696@lid"
   },
   "6283134844523@s.whatsapp.net": {
-    "id": "239328697536578@lid",
-    "lid": "239328697536578@lid",
     "isContact": true,
+    "id": "6283134844523@s.whatsapp.net",
     "name": "Hamdan",
-    "notify": "Anda Siapa?"
+    "lid": "239328697536578@lid"
   },
   "6289643785010@s.whatsapp.net": {
     "isContact": true,
@@ -26645,56 +26639,40 @@
     "name": "Yura ~🍡",
     "lid": "262659379323004@lid"
   },
-  "6289667923162@s.whatsapp.net": {
-    "id": "97968623505429@lid",
-    "lid": "97968623505429@lid",
-    "notify": "Hen V2"
+  "60137023346@s.whatsapp.net": {
+    "isContact": true,
+    "id": "60137023346@s.whatsapp.net",
+    "name": "√Ayzēl Regî Marcóレジ ♡🇰🇷",
+    "lid": "207373906001945@lid"
   },
-  "144843846217747@lid": {
-    "id": "144843846217747@lid",
-    "lid": "144843846217747@lid",
+  "207373906001945@lid": {
+    "id": "207373906001945@lid",
+    "lid": "207373906001945@lid",
+    "imgUrl": "changed"
+  },
+  "90916371062907@lid": {
+    "id": "90916371062907@lid",
+    "lid": "90916371062907@lid",
+    "imgUrl": "changed"
+  },
+  "157380620890344@lid": {
+    "id": "157380620890344@lid",
+    "lid": "157380620890344@lid",
+    "imgUrl": "removed"
+  },
+  "160434476814340@lid": {
+    "id": "160434476814340@lid",
+    "lid": "160434476814340@lid",
     "imgUrl": "changed"
   },
   "6289688206739@s.whatsapp.net": {
     "id": "81582920577063@lid",
     "lid": "81582920577063@lid",
-    "notify": "Wily",
-    "verifiedName": "Wily"
+    "notify": "Wily"
   },
-  "60199487082@s.whatsapp.net": {
-    "id": "219924572164097@lid",
-    "lid": "219924572164097@lid",
-    "notify": "𝚣𝚒𝚔𝚛𝚒"
-  },
-  "203469931729060@lid": {
-    "id": "203469931729060@lid",
-    "lid": "203469931729060@lid",
-    "imgUrl": "changed"
-  },
-  "259811732103211@lid": {
-    "id": "259811732103211@lid",
-    "lid": "259811732103211@lid",
-    "imgUrl": "removed"
-  },
-  "103775436034250@lid": {
-    "id": "103775436034250@lid",
-    "lid": "103775436034250@lid",
-    "imgUrl": "changed"
-  },
-  "6287860371877@s.whatsapp.net": {
-    "id": "200356231442552@lid",
-    "lid": "200356231442552@lid",
-    "notify": "Fuma Kotaro"
-  },
-  "18258961472@s.whatsapp.net": {
-    "id": "54392187277397@lid",
-    "lid": "54392187277397@lid",
-    "notify": "Anda Siapa??",
-    "verifiedName": "Anda Siapa??"
-  },
-  "17106854748264@lid": {
-    "id": "17106854748264@lid",
-    "lid": "17106854748264@lid",
-    "imgUrl": "changed"
+  "6289667923162@s.whatsapp.net": {
+    "id": "97968623505429@lid",
+    "lid": "97968623505429@lid",
+    "notify": "Hen V2"
   }
 }

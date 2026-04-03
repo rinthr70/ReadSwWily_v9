@@ -874,12 +874,16 @@ setTimeout(() => {
         });
 }
 
-setupCrashGuard();
-
 let mainCrashCount = 0;
 const MAX_MAIN_CRASHES = 10;
+let isMainActive = false;
 
 async function startWithGuard() {
+        if (isMainActive) {
+                console.warn('\x1b[33m[CrashGuard] Restart diminta tapi bot masih aktif, skip.\x1b[39m');
+                return;
+        }
+        isMainActive = true;
         try {
                 await main();
         } catch (err) {
@@ -887,14 +891,19 @@ async function startWithGuard() {
                 console.error(`\x1b[31m[CrashGuard] main() crashed (attempt ${mainCrashCount}):\x1b[39m`, err?.message || err);
 
                 if (mainCrashCount >= MAX_MAIN_CRASHES) {
-                        console.error('\x1b[31m[CrashGuard] Too many main() crashes. Exiting.\x1b[39m');
+                        console.error('\x1b[31m[CrashGuard] Terlalu banyak crash. Keluar...\x1b[39m');
                         process.exit(1);
                 }
 
-                const delay = Math.min(5000 * mainCrashCount, 30000);
-                console.log(`\x1b[33m[CrashGuard] Restarting main() in ${delay / 1000}s...\x1b[39m`);
-                setTimeout(() => startWithGuard(), delay);
+                const waitMs = Math.min(5000 * mainCrashCount, 30000);
+                console.log(`\x1b[33m[CrashGuard] Restart main() dalam ${waitMs / 1000}s... (Percobaan ${mainCrashCount})\x1b[39m`);
+                isMainActive = false;
+                setTimeout(() => startWithGuard(), waitMs);
+        } finally {
+                isMainActive = false;
         }
 }
+
+setupCrashGuard(startWithGuard);
 
 startWithGuard();

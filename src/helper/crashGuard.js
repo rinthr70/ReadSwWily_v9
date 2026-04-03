@@ -4,6 +4,7 @@ const CMD_TIMEOUT_MS = 120000;
 
 let errorCount = 0;
 let errorWindowStart = Date.now();
+let isRestarting = false;
 
 function trackError() {
     const now = Date.now();
@@ -15,6 +16,28 @@ function trackError() {
     return errorCount;
 }
 
+function cleanupClient() {
+    try {
+        if (global.hisokaClient) {
+            global.hisokaClient.ev.removeAllListeners();
+            global.hisokaClient.ws?.close();
+            global.hisokaClient = null;
+        }
+    } catch {}
+    try {
+        if (global.memoryMonitor) {
+            global.memoryMonitor.stop();
+            global.memoryMonitor = null;
+        }
+    } catch {}
+    try {
+        if (global.cacheCleaner) {
+            clearInterval(global.cacheCleaner);
+            global.cacheCleaner = null;
+        }
+    } catch {}
+}
+
 export function setupCrashGuard(restartFn) {
     process.on('uncaughtException', (err, origin) => {
         const count = trackError();
@@ -22,11 +45,20 @@ export function setupCrashGuard(restartFn) {
 
         if (count >= MAX_ERRORS_PER_MINUTE) {
             console.error('\x1b[31m[CrashGuard] Too many errors, forcing restart...\x1b[39m');
+            cleanupClient();
             setTimeout(() => process.exit(1), 1000);
             return;
         }
 
-        if (!process.env.BOT_DEV_MODE) return;
+        if (restartFn && !isRestarting) {
+            isRestarting = true;
+            console.log(`\x1b[33m[CrashGuard] Error caught, restarting bot in ${RESTART_DELAY_MS / 1000}s...\x1b[39m`);
+            cleanupClient();
+            setTimeout(() => {
+                isRestarting = false;
+                restartFn().catch(() => {});
+            }, RESTART_DELAY_MS);
+        }
     });
 
     process.on('unhandledRejection', (reason, promise) => {
@@ -36,17 +68,20 @@ export function setupCrashGuard(restartFn) {
 
         if (count >= MAX_ERRORS_PER_MINUTE) {
             console.error('\x1b[31m[CrashGuard] Too many rejections, forcing restart...\x1b[39m');
+            cleanupClient();
             setTimeout(() => process.exit(1), 1000);
         }
     });
 
     process.on('SIGTERM', () => {
         console.log('\x1b[33m[CrashGuard] SIGTERM received, shutting down gracefully...\x1b[39m');
-        setTimeout(() => process.exit(0), 3000);
+        cleanupClient();
+        setTimeout(() => process.exit(1), 3000);
     });
 
     process.on('SIGINT', () => {
-        console.log('\x1b[33m[CrashGuard] SIGINT received, shutting down gracefully...\x1b[39m');
+        console.log('\x1b[33m[CrashGuard] SIGINT received (Ctrl+C), shutting down...\x1b[39m');
+        cleanupClient();
         setTimeout(() => process.exit(0), 1000);
     });
 

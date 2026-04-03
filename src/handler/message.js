@@ -32,6 +32,15 @@ function isMainBot(hisoka) {
     return hisoka?.isMainBot === true;
 }
 
+function parseYtdlpError(stderr, fallback) {
+    if (!stderr) return fallback || 'Unknown error';
+    const errorLine = stderr.split('\n').find(l => l.trim().startsWith('ERROR:'));
+    if (errorLine) {
+        return errorLine.replace(/^ERROR:\s*/, '').replace(/^\[youtube\]\s*[^:]+:\s*/, '').trim();
+    }
+    return fallback || stderr.substring(0, 150);
+}
+
 function getSenderNumber(m) {
     if (m.key?.participant) return m.key.participant.split('@')[0];
     if (m.key?.remoteJid) return m.key.remoteJid.split('@')[0];
@@ -3575,7 +3584,7 @@ text += `╰═════════════════╯`;
                                         await new Promise((resolve, reject) => {
                                                 const cmd = `"${ytdlpBin}" --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${tmpTemplate}" "${video.url}"`;
                                                 exec(cmd, { timeout: 120000 }, (err, stdout, stderr) => {
-                                                        if (err) return reject(new Error(stderr || err.message));
+                                                        if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve();
                                                 });
                                         });
@@ -3627,7 +3636,7 @@ text += `╰═════════════════╯`;
 
                                         const metaRaw = await new Promise((resolve, reject) => {
                                                 exec(`"${ytdlpBin}" --no-playlist --dump-json "${ytUrl}"`, { timeout: 30000 }, (err, stdout, stderr) => {
-                                                        if (err) return reject(new Error(stderr || err.message));
+                                                        if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve(stdout.trim());
                                                 });
                                         });
@@ -3649,7 +3658,7 @@ text += `╰═════════════════╯`;
                                         await new Promise((resolve, reject) => {
                                                 const cmd = `"${ytdlpBin}" --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${tmpTemplate}" "${ytUrl}"`;
                                                 exec(cmd, { timeout: 120000 }, (err, stdout, stderr) => {
-                                                        if (err) return reject(new Error(stderr || err.message));
+                                                        if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve();
                                                 });
                                         });
@@ -3705,7 +3714,7 @@ text += `╰═════════════════╯`;
 
                                         const metaRaw = await new Promise((resolve, reject) => {
                                                 exec(`"${ytdlpBin}" --no-playlist --dump-json "${ytUrl}"`, { timeout: 30000 }, (err, stdout, stderr) => {
-                                                        if (err) return reject(new Error(stderr || err.message));
+                                                        if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve(stdout.trim());
                                                 });
                                         });
@@ -3727,7 +3736,7 @@ text += `╰═════════════════╯`;
                                         await new Promise((resolve, reject) => {
                                                 const cmd = `"${ytdlpBin}" --no-playlist -f "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360]+bestaudio/best[height<=360]" --merge-output-format mp4 -o "${tmpTemplate}" "${ytUrl}"`;
                                                 exec(cmd, { timeout: 180000 }, (err, stdout, stderr) => {
-                                                        if (err) return reject(new Error(stderr || err.message));
+                                                        if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve();
                                                 });
                                         });

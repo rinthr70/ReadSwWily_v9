@@ -10,10 +10,31 @@ const _watchers = {};
 const _debounceTimers = {};
 
 const WATCHED_FILES = [
-    { key: 'message',    rel: 'src/handler/message.js' },
-    { key: 'antidelete', rel: 'src/handler/antidelete.js' },
-    { key: 'event',      rel: 'src/handler/event.js' },
-    { key: 'utils',      rel: 'src/helper/utils.js' },
+    // ── Handler ──────────────────────────────────
+    { key: 'message',      rel: 'src/handler/message.js' },
+    { key: 'antidelete',   rel: 'src/handler/antidelete.js' },
+    { key: 'event',        rel: 'src/handler/event.js' },
+
+    // ── Helper (aman di-reload) ───────────────────
+    { key: 'utils',        rel: 'src/helper/utils.js' },
+    { key: 'inject',       rel: 'src/helper/inject.js' },
+    { key: 'text',         rel: 'src/helper/text.js' },
+    { key: 'emoji',        rel: 'src/helper/emoji.js' },
+    { key: 'telegram',     rel: 'src/helper/telegram.js' },
+    { key: 'phoneRegion',  rel: 'src/helper/phoneRegion.js' },
+    { key: 'voCache',      rel: 'src/helper/voCache.js' },
+    { key: 'cleaner',      rel: 'src/helper/cleaner.js' },
+    { key: 'helperIndex',  rel: 'src/helper/index.js' },
+
+    // ── Database helpers ─────────────────────────
+    { key: 'botStats',     rel: 'src/db/botStats.js' },
+    { key: 'jsondb',       rel: 'src/db/json.js' },
+
+    // ── SKIP (memegang state/timer aktif) ────────
+    // crashGuard.js   → handle signal proses, berbahaya
+    // hotReload.js    → dirinya sendiri
+    // memoryMonitor.js → timer RAM aktif
+    // jadibot.js      → sesi aktif user lain
 ];
 
 async function loadModule(rel) {

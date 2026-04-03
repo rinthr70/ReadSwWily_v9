@@ -91,6 +91,8 @@ export class MemoryMonitor {
                 this.intervalId = null;
                 this.isShuttingDown = false;
                 this.config = config;
+                this.logIntervalMs = memConfig.logIntervalMs || 300000;
+                this._checkCount = 0;
         }
 
         start() {
@@ -131,7 +133,11 @@ export class MemoryMonitor {
                 const percentage = ((currentUsage / this.memoryLimit) * 100).toFixed(1);
                 const sysPercentage = ((systemMem.used / systemMem.total) * 100).toFixed(1);
 
-                if (this.logUsage) {
+                this._checkCount++;
+                const logEveryN = Math.max(1, Math.round(this.logIntervalMs / this.checkInterval));
+                const shouldLog = this.logUsage && (this._checkCount === 1 || this._checkCount % logEveryN === 0);
+
+                if (shouldLog) {
                         const pct = parseFloat(percentage);
                         let color = '\x1b[32m';
                         let icon = '✅';

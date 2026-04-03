@@ -1,15 +1,9 @@
-═══════════════════════════════════
 🤖 *Update Script — CrashGuard & Hot Reload*
 📅 Jumat, 3 April 2026
-═══════════════════════════════════
 
-═══════════════════════════════════
 📋 *CHANGELOG WILY-BOT*
-═══════════════════════════════════
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔧 *PERBAIKAN (BUG FIX)*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 > 📌 *CrashGuard — Auto Restart Internal*
 └ Sebelumnya: error/crash hanya dicatat di log, bot tetap mati
@@ -54,9 +48,7 @@
 └ Tampil info judul, resolusi, durasi, ukuran file
 └ Error handling: pesan gagal yang jelas & informatif
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✨ *FITUR BARU*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 > 📌 *Hot Reload — Edit Kode Tanpa Restart Bot*
 └ Bot otomatis mendeteksi perubahan file & reload
@@ -78,9 +70,7 @@
 └ 4 file sengaja di-skip karena memegang state aktif:
   crashGuard.js, hotReload.js, memoryMonitor.js, jadibot.js
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚙️ *PERUBAHAN TEKNIS*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 └ File baru: src/helper/hotReload.js
 └ setupCrashGuard() sekarang menerima fungsi restart
@@ -90,6 +80,4 @@
   berat, kini pakai yt-dlp binary & yt-search
 └ Jumlah command: 72 → *75 command*
 
-═══════════════════════════════════
 🤖 *Wily-Bot* — Updated 3 Apr 2026
-═══════════════════════════════════

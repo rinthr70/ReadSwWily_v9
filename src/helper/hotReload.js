@@ -82,21 +82,27 @@ function watchFile(rel, key) {
 }
 
 export async function initHotReload() {
-    console.log('\x1b[36m────────────────────────────────────────\x1b[39m');
-    console.log('\x1b[36mHot Reload Dimulai\x1b[39m');
+    let ok = 0;
+    let fail = 0;
+    const failed = [];
 
     for (const { key, rel } of WATCHED_FILES) {
         const mod = await loadModule(rel);
         if (mod !== null) {
             _handlers[key] = mod;
             watchFile(rel, key);
-            console.log(`\x1b[32m[HotReload] Watching: ${rel}\x1b[39m`);
+            ok++;
         } else {
-            console.error(`\x1b[31m[HotReload] Skip watch '${rel}' (gagal load awal)\x1b[39m`);
+            failed.push(rel);
+            fail++;
         }
     }
 
-    console.log('\x1b[36m────────────────────────────────────────\x1b[39m');
+    if (fail === 0) {
+        console.log(`\x1b[32m[HotReload] Active - Watching ${ok} files\x1b[39m`);
+    } else {
+        console.log(`\x1b[33m[HotReload] Active - ${ok} watched, ${fail} failed: ${failed.join(', ')}\x1b[39m`);
+    }
 }
 
 export function getHandler(key) {

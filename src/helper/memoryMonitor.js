@@ -99,20 +99,14 @@ export class MemoryMonitor {
                         return;
                 }
 
-                const cyan = '\x1b[36m';
-                const green = '\x1b[32m';
-                const yellow = '\x1b[33m';
-                const reset = '\x1b[0m';
                 const systemMem = getSystemMemoryInfo();
-
-                console.log(`${cyan}────────────────────────────────────────${reset}`);
-                console.log(`${green}Memory Monitor Started${reset}`);
-                console.log(`${cyan}────────────────────────────────────────${reset}`);
-                console.log(`${yellow}System RAM: ${formatBytes(systemMem.total)}${reset}`);
-                console.log(`${yellow}Limit: ${formatBytes(this.memoryLimit)} (${this.autoDetect ? 'Auto ' + this.autoDetectPercentage + '%' : 'Manual'})${reset}`);
-                console.log(`${yellow}Check Interval: ${this.checkInterval / 1000} seconds${reset}`);
-                console.log(`${yellow}Log Usage: ${this.logUsage ? 'Yes' : 'No'}${reset}`);
-                console.log(`${cyan}────────────────────────────────────────${reset}`);
+                const limitLabel = this.autoDetect ? `Auto ${this.autoDetectPercentage}%` : 'Manual';
+                console.log(
+                        `\x1b[32m[MemoryMonitor] Active\x1b[0m` +
+                        ` | Sys: \x1b[36m${formatBytes(systemMem.total)}\x1b[0m` +
+                        ` | Limit: \x1b[33m${formatBytes(this.memoryLimit)} (${limitLabel})\x1b[0m` +
+                        ` | Interval: \x1b[33m${this.checkInterval / 1000}s\x1b[0m`
+                );
 
                 this.checkMemory();
 
@@ -132,9 +126,28 @@ export class MemoryMonitor {
                 if (this.isShuttingDown) return;
 
                 const memUsage = getCurrentMemoryUsage();
+                const systemMem = getSystemMemoryInfo();
                 const currentUsage = memUsage.rss;
                 const percentage = ((currentUsage / this.memoryLimit) * 100).toFixed(1);
+                const sysPercentage = ((systemMem.used / systemMem.total) * 100).toFixed(1);
 
+                if (this.logUsage) {
+                        const pct = parseFloat(percentage);
+                        let color = '\x1b[32m';
+                        let icon = '✅';
+                        if (pct >= 80) { color = '\x1b[31m'; icon = '🔴'; }
+                        else if (pct >= 60) { color = '\x1b[33m'; icon = '⚠️ '; }
+
+                        const barLen = 20;
+                        const filled = Math.round((pct / 100) * barLen);
+                        const bar = '█'.repeat(filled) + '░'.repeat(barLen - filled);
+
+                        console.log(
+                                `\x1b[36m[MemoryMonitor]\x1b[0m ${icon} Bot: ${color}${formatBytes(currentUsage)} / ${formatBytes(this.memoryLimit)}\x1b[0m` +
+                                ` [${color}${bar}\x1b[0m] ${color}${percentage}%\x1b[0m` +
+                                ` | Sys: ${formatBytes(systemMem.used)}/${formatBytes(systemMem.total)} (${sysPercentage}%)`
+                        );
+                }
 
                 if (currentUsage >= this.memoryLimit) {
                         this.isShuttingDown = true;

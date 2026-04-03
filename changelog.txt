@@ -101,3 +101,80 @@
 ═══════════════════════════════════
 🤖 *Wily-Bot* — Updated 30 Mar 2026
 ═══════════════════════════════════
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+═══════════════════════════════════
+🤖 *Update Script — CrashGuard & Hot Reload*
+📅 Jumat, 3 April 2026
+═══════════════════════════════════
+
+═══════════════════════════════════
+📋 *CHANGELOG WILY-BOT*
+═══════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *PERBAIKAN (BUG FIX)*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+> 📌 *CrashGuard — Auto Restart Internal*
+└ Sebelumnya: error/crash hanya dicatat di log, bot tetap mati
+└ Fix: uncaughtException sekarang trigger restart koneksi
+  otomatis setelah 5 detik tanpa keluar dari proses
+└ Flag isRestarting mencegah 2 restart berjalan bersamaan
+
+> 📌 *CrashGuard — SIGTERM untuk Pterodactyl*
+└ Sebelumnya: SIGTERM exit kode 0 → Pterodactyl anggap
+  berhenti normal → tidak di-restart otomatis
+└ Fix: SIGTERM sekarang exit kode 1 → Pterodactyl
+  mendeteksi sebagai crash → auto-restart aktif
+└ SIGINT (Ctrl+C) tetap exit kode 0 (intentional stop)
+
+> 📌 *CrashGuard — Cleanup Sebelum Restart*
+└ Sebelumnya: koneksi lama masih hidup saat restart
+└ Fix: WebSocket, MemoryMonitor & cache dibersihkan
+  terlebih dahulu sebelum proses restart dimulai
+
+> 📌 *startWithGuard — Cegah Double Instance*
+└ Fix: Tambah flag isMainActive agar tidak ada 2 instance
+  bot berjalan bersamaan saat restart dipicu
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ *FITUR BARU*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+> 📌 *Hot Reload — Edit Kode Tanpa Restart Bot*
+└ Bot otomatis mendeteksi perubahan file & reload
+  modul yang berubah tanpa mematikan koneksi WA
+└ Total 14 file dipantau secara real-time:
+  · src/handler/message.js
+  · src/handler/antidelete.js
+  · src/handler/event.js
+  · src/helper/utils.js, inject.js, text.js
+  · src/helper/emoji.js, telegram.js, phoneRegion.js
+  · src/helper/voCache.js, cleaner.js, index.js
+  · src/db/botStats.js, json.js
+└ Debounce 600ms: tidak reload berkali-kali saat
+  save cepat atau editor auto-save
+└ Jika file gagal reload (syntax error), bot tetap
+  pakai versi lama — tidak crash
+└ Log startup ringkas 1 baris:
+  [HotReload] Active - Watching 14 files
+└ 4 file sengaja di-skip karena memegang state aktif:
+  crashGuard.js, hotReload.js, memoryMonitor.js, jadibot.js
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ *PERUBAHAN TEKNIS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+└ File baru: src/helper/hotReload.js
+└ setupCrashGuard() sekarang menerima fungsi restart
+└ Static import message.js & antidelete.js diganti
+  dynamic import via sistem Hot Reload
+└ Jumlah command: *72 command* (tidak berubah)
+
+═══════════════════════════════════
+🤖 *Wily-Bot* — Updated 3 Apr 2026
+═══════════════════════════════════

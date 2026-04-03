@@ -18047,7 +18047,8 @@
     "lid": "76790290767977@lid",
     "isContact": true,
     "name": "√ Elisa",
-    "notify": "NISKI | RESSKOVV"
+    "notify": "NISKI | RESSKOVV",
+    "imgUrl": "changed"
   },
   "6282154683364@s.whatsapp.net": {
     "isContact": true,
@@ -25925,10 +25926,11 @@
     "lid": "278301096558813@lid"
   },
   "6282228431883@s.whatsapp.net": {
+    "id": "124507108991054@lid",
+    "lid": "124507108991054@lid",
     "isContact": true,
-    "id": "6282228431883@s.whatsapp.net",
     "name": "• Ikyy No Cure",
-    "lid": "124507108991054@lid"
+    "notify": "Ikyysigmax"
   },
   "6281380884445@s.whatsapp.net": {
     "isContact": true,

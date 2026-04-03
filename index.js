@@ -252,7 +252,8 @@ let reconnectCount = 0;
 let memoryMonitor = null;
 
 async function main() {
-        console.log(`\x1b[36mStarting with session directory: ${sessionDir}\x1b[39m`);
+        const sessionName = path.basename(sessionDir);
+        console.log(`\x1b[36m[Session] Starting: ${sessionName}\x1b[39m`);
 
         await initHotReload();
 
@@ -282,11 +283,7 @@ async function main() {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
 
-        console.info(
-                `\x1b[32mUsing WhatsApp version: ${version.join('.')}${
-                        isLatest ? '' : ' (latest version is recommended)'
-                }\x1b[39m`
-        );
+        console.info(`\x1b[32m[Baileys] v${version.join('.')}${isLatest ? '' : ' (update tersedia)'}\x1b[39m`);
 
         const cacheMsg = new Map();
         // ini tambahan
@@ -417,16 +414,16 @@ async function main() {
                 if (connection === 'open') {
                         lastDisconnect = 0;
                         reconnectCount = 0;
-                        console.log(`\x1b[32mConnected successfully! ${JSON.stringify(hisoka.user, null, 2)}\x1b[39m`);
+                        const userId = hisoka.user?.id?.split(':')[0] || '-';
+                        const userName = hisoka.user?.name || '-';
+                        console.log(`\x1b[32m[Bot] ✅ Connected: ${userId} | ${userName}\x1b[39m`);
 
-                        console.info('\x1b[36mFetching privacy settings...\x1b[39m');
                         const privacySettings = await hisoka.fetchPrivacySettings();
                         settings.write('privacy', privacySettings);
 
-                        console.info('\x1b[36mLoading command handlers...\x1b[39m');
                         const commands = await getCaseName(path.join(process.cwd(), 'src', 'handler', 'message.js'));
                         hisoka.loadedCommands = commands;
-                        console.info(`\x1b[32mLoaded ${commands.length} command handlers.\x1b[39m`);
+                        console.info(`\x1b[32m[Handler] ✅ Loaded ${commands.length} commands\x1b[39m`);
 
                         const startAutoOnline = () => {
                         const config = loadConfig();

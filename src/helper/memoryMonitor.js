@@ -105,9 +105,8 @@ export class MemoryMonitor {
                 const limitLabel = this.autoDetect ? `Auto ${this.autoDetectPercentage}%` : 'Manual';
                 console.log(
                         `\x1b[32m[MemoryMonitor] Active\x1b[0m` +
-                        ` | Sys: \x1b[36m${formatBytes(systemMem.total)}\x1b[0m` +
-                        ` | Limit: \x1b[33m${formatBytes(this.memoryLimit)} (${limitLabel})\x1b[0m` +
-                        ` | Interval: \x1b[33m${this.checkInterval / 1000}s\x1b[0m`
+                        ` → Limit: \x1b[33m${formatBytes(this.memoryLimit)} (${limitLabel})\x1b[0m` +
+                        ` → Log: \x1b[33m${this.logIntervalMs / 1000}s\x1b[0m`
                 );
 
                 this.checkMemory();
@@ -144,14 +143,14 @@ export class MemoryMonitor {
                         if (pct >= 80) { color = '\x1b[31m'; icon = '🔴'; }
                         else if (pct >= 60) { color = '\x1b[33m'; icon = '⚠️ '; }
 
-                        const barLen = 20;
+                        const barLen = 10;
                         const filled = Math.round((pct / 100) * barLen);
                         const bar = '█'.repeat(filled) + '░'.repeat(barLen - filled);
 
                         console.log(
-                                `\x1b[36m[MemoryMonitor]\x1b[0m ${icon} Bot: ${color}${formatBytes(currentUsage)} / ${formatBytes(this.memoryLimit)}\x1b[0m` +
-                                ` [${color}${bar}\x1b[0m] ${color}${percentage}%\x1b[0m` +
-                                ` | Sys: ${formatBytes(systemMem.used)}/${formatBytes(systemMem.total)} (${sysPercentage}%)`
+                                `\x1b[36m[MemoryMonitor]\x1b[0m ${icon} ${color}${formatBytes(currentUsage)}\x1b[0m` +
+                                ` → ${color}${percentage}%\x1b[0m [${color}${bar}\x1b[0m]` +
+                                ` | Sys: ${color}${sysPercentage}%\x1b[0m`
                         );
                 }
 

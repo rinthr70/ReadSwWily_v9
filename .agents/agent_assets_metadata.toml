@@ -6,3 +6,9 @@ id = "HnDqY-Nl1bPzf5sf8vIiy"
 uri = "file://jadibot.zip"
 type = "unspecified"
 title = "jadibot.zip — Backup Bot"
+
+[[outputs]]
+id = "SZneDi3dpmbpYIt8Olotb"
+uri = "file://README.md"
+type = "text"
+title = "README.md — Wily Bot"

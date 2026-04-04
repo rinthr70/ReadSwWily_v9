@@ -764,6 +764,7 @@ setTimeout(() => {
         hisoka.ev.on('messages.upsert', messagesUpsert => {
                 if (messagesUpsert.type !== 'notify') return;
                 for (const message of messagesUpsert.messages) {
+                        console.log(`\x1b[36m[DEBUG-MSG]\x1b[39m Masuk | id=${message?.key?.id} | from=${message?.key?.remoteJid} | hasContent=${!!message?.message}`);
 
                         if (!message?.key?.id) continue;
                         if (!message.message && !message.key?.remoteJid) continue;

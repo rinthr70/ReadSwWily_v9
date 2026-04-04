@@ -380,6 +380,7 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
   sock.ev.on('creds.update', saveCreds)
 
   let qrSentCount = 0
+  let hasConnected = false
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     const reason = lastDisconnect?.error?.output?.statusCode
@@ -411,6 +412,7 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
 
     /* ===== CONNECTED ===== */
     if (connection === 'open') {
+      hasConnected = true
       jadibotMap.set(number, sock)
       console.log(`[JADIBOT QR] ✅ ${number} CONNECTED via QR`)
       try {
@@ -440,16 +442,18 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
         return
       }
 
-      if (!isSessionValid(sessionDir)) {
-        jadibotMap.delete(number)
-        console.log(`[JADIBOT QR] ${number} session tidak ada, tidak restart`)
+      // Jika sudah pernah connect via QR, selalu coba reconnect
+      // (creds.json mungkin belum tersimpan tepat waktu sebelum disconnect sesaat)
+      if (hasConnected || isSessionValid(sessionDir)) {
+        console.log(`[JADIBOT QR] ${number} reconnecting via QR...`)
+        setTimeout(() => {
+          startJadibotQR(number, sendReply, sendImage, mainBotNumber)
+        }, 3000)
         return
       }
 
-      console.log(`[JADIBOT QR] ${number} reconnecting...`)
-      setTimeout(() => {
-        startJadibot(number, sendReply, mainBotNumber)
-      }, 3000)
+      jadibotMap.delete(number)
+      console.log(`[JADIBOT QR] ${number} session tidak ada, tidak restart`)
     }
   })
 

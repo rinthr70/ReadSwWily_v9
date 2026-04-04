@@ -57,12 +57,6 @@ async function autoSaveViewOnce(message, hisoka) {
         // Unwrap ephemeral dulu
         if (targetMsg.ephemeralMessage?.message) targetMsg = targetMsg.ephemeralMessage.message
 
-        // Log struktur pesan jika mengandung viewOnce (debug)
-        const msgKeys = Object.keys(targetMsg)
-        if (msgKeys.some(k => k.toLowerCase().includes('viewonce') || k.toLowerCase().includes('view_once'))) {
-                console.log(`\x1b[35m[VODebug]\x1b[0m Keys: ${msgKeys.join(', ')} | id: ${message.key.id}`)
-        }
-
         // Deteksi view-once wrapper
         if (targetMsg.viewOnceMessage?.message) {
                 originalWrapper = targetMsg.viewOnceMessage.message
@@ -81,7 +75,6 @@ async function autoSaveViewOnce(message, hisoka) {
                 const mediaTypesVO = ['imageMessage', 'videoMessage', 'audioMessage']
                 for (const mType of mediaTypesVO) {
                         if (targetMsg[mType]?.viewOnce === true) {
-                                console.log(`\x1b[35m[VODebug]\x1b[0m viewOnce flag found in ${mType}`)
                                 isVO = true
                                 break
                         }

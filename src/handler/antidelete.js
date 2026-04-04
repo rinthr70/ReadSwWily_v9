@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { jidNormalizedUser, jidDecode, isJidGroup, isPnUser, getContentType, downloadMediaMessage } from 'baileys';
 import { getTmpPath } from '../helper/cleaner.js';
+import { hasViewOnceCache, getViewOnceCache } from '../helper/voCache.js';
 
 function loadConfig() {
         try {
@@ -232,6 +233,16 @@ export default async function handleDeletedMessage(update, hisoka) {
                         groupName = groupData?.subject || jidDecode(from)?.user || 'Unknown Group';
                 }
                 
+                /* ===== CEK APAKAH PESAN ORIGINAL ADALAH VIEW ONCE ===== */
+                const originalMsg = cachedMsg.message;
+                const isViewOnce = !!(
+                        originalMsg?.viewOnceMessage?.message ||
+                        originalMsg?.viewOnceMessageV2?.message ||
+                        originalMsg?.viewOnceMessageV2Extension?.message ||
+                        originalMsg?.ephemeralMessage?.message?.viewOnceMessage?.message ||
+                        originalMsg?.ephemeralMessage?.message?.viewOnceMessageV2?.message
+                );
+
                 const messageContent = getMessageContent(cachedMsg);
                 if (!messageContent) return;
                 
@@ -278,6 +289,15 @@ export default async function handleDeletedMessage(update, hisoka) {
                 const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
                 const isMediaMessage = mediaTypes.includes(type);
 
+                /* ===== AMBIL BUFFER MEDIA (cek voCache dulu untuk view-once) ===== */
+                let cachedVoData = null;
+                if (isViewOnce && hasViewOnceCache(key.id)) {
+                        cachedVoData = getViewOnceCache(key.id);
+                        if (cachedVoData) {
+                                console.log(`\x1b[36m[AntiDelete]\x1b[0m View-once ditemukan di cache: ${key.id}`);
+                        }
+                }
+
                 for (const target of targets) {
                         try {
                                 if (!isMediaMessage) {
@@ -285,48 +305,66 @@ export default async function handleDeletedMessage(update, hisoka) {
                                         continue;
                                 }
 
-                                const mediaBuffer = await downloadMedia(hisoka, cachedMsg, messageContent);
+                                /* Gunakan voCache jika tersedia (view-once), lain-lain download biasa */
+                                let mediaBuffer = null;
+                                let resolvedMimetype = messageContent[type]?.mimetype || '';
+                                let resolvedPtt = messageContent[type]?.ptt || false;
+                                let resolvedFileName = messageContent[type]?.fileName || '';
+
+                                if (cachedVoData) {
+                                        mediaBuffer = cachedVoData.buffer;
+                                        resolvedMimetype = cachedVoData.meta?.mimetype || resolvedMimetype;
+                                        resolvedPtt = cachedVoData.meta?.ptt ?? resolvedPtt;
+                                        resolvedFileName = cachedVoData.meta?.fileName || resolvedFileName;
+                                } else {
+                                        mediaBuffer = await downloadMedia(hisoka, cachedMsg, messageContent);
+                                }
 
                                 if (mediaBuffer) {
                                         try {
                                                 const content = messageContent[type];
                                                 let mediaExt = ext;
 
-                                                if (content?.mimetype) {
-                                                        if (content.mimetype.includes('webp')) mediaExt = 'webp';
-                                                        else if (content.mimetype.includes('mp4')) mediaExt = 'mp4';
-                                                        else if (content.mimetype.includes('jpeg') || content.mimetype.includes('jpg')) mediaExt = 'jpg';
-                                                        else if (content.mimetype.includes('png')) mediaExt = 'png';
-                                                        else if (content.mimetype.includes('gif')) mediaExt = 'gif';
-                                                        else if (content.mimetype.includes('mp3')) mediaExt = 'mp3';
-                                                        else if (content.mimetype.includes('ogg')) mediaExt = 'ogg';
-                                                        else if (content.mimetype.includes('pdf')) mediaExt = 'pdf';
+                                                if (resolvedMimetype) {
+                                                        if (resolvedMimetype.includes('webp')) mediaExt = 'webp';
+                                                        else if (resolvedMimetype.includes('mp4')) mediaExt = 'mp4';
+                                                        else if (resolvedMimetype.includes('jpeg') || resolvedMimetype.includes('jpg')) mediaExt = 'jpg';
+                                                        else if (resolvedMimetype.includes('png')) mediaExt = 'png';
+                                                        else if (resolvedMimetype.includes('gif')) mediaExt = 'gif';
+                                                        else if (resolvedMimetype.includes('mp3')) mediaExt = 'mp3';
+                                                        else if (resolvedMimetype.includes('ogg')) mediaExt = 'ogg';
+                                                        else if (resolvedMimetype.includes('pdf')) mediaExt = 'pdf';
                                                 }
-                                                if (content?.fileName) {
-                                                        const docExt = content.fileName.split('.').pop();
+                                                if (resolvedFileName) {
+                                                        const docExt = resolvedFileName.split('.').pop();
                                                         if (docExt) mediaExt = docExt;
                                                 }
 
+                                                /* Tambah label VIEW ONCE di header jika perlu */
+                                                const sendHeader = isViewOnce
+                                                        ? headerText.replace('*PESAN DIHAPUS*', '*PESAN DIHAPUS* 👁️ _(View Once)_')
+                                                        : headerText;
+
                                                 if (type === 'imageMessage') {
-                                                        await hisoka.sendMessage(target, { image: mediaBuffer, caption: headerText });
+                                                        await hisoka.sendMessage(target, { image: mediaBuffer, caption: sendHeader });
                                                 } else if (type === 'videoMessage') {
-                                                        await hisoka.sendMessage(target, { video: mediaBuffer, caption: headerText });
+                                                        await hisoka.sendMessage(target, { video: mediaBuffer, caption: sendHeader });
                                                 } else if (type === 'audioMessage') {
-                                                        await hisoka.sendMessage(target, { text: headerText });
+                                                        await hisoka.sendMessage(target, { text: sendHeader });
                                                         await hisoka.sendMessage(target, {
                                                                 audio: mediaBuffer,
-                                                                mimetype: content?.mimetype || 'audio/mpeg',
-                                                                ptt: content?.ptt || false,
+                                                                mimetype: resolvedMimetype || 'audio/mpeg',
+                                                                ptt: resolvedPtt,
                                                         });
                                                 } else if (type === 'stickerMessage') {
-                                                        await hisoka.sendMessage(target, { text: headerText });
+                                                        await hisoka.sendMessage(target, { text: sendHeader });
                                                         await hisoka.sendMessage(target, { sticker: mediaBuffer });
                                                 } else if (type === 'documentMessage') {
-                                                        await hisoka.sendMessage(target, { text: headerText });
+                                                        await hisoka.sendMessage(target, { text: sendHeader });
                                                         await hisoka.sendMessage(target, {
                                                                 document: mediaBuffer,
-                                                                mimetype: content?.mimetype || 'application/octet-stream',
-                                                                fileName: content?.fileName || `document.${mediaExt}`,
+                                                                mimetype: resolvedMimetype || 'application/octet-stream',
+                                                                fileName: resolvedFileName || `document.${mediaExt}`,
                                                         });
                                                 }
                                         } catch (sendErr) {

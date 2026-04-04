@@ -26726,7 +26726,7 @@
     "imgUrl": "changed"
   },
   "6289688206739@s.whatsapp.net": {
-    "id": "6289688206739@s.whatsapp.net",
+    "id": "81582920577063@lid",
     "lid": "81582920577063@lid",
     "notify": "Wily"
   },
@@ -26999,8 +26999,7 @@
   "6281345393467@s.whatsapp.net": {
     "id": "185697289949185@lid",
     "lid": "185697289949185@lid",
-    "notify": "Akiho/Nero",
-    "verifiedName": "Akiho/Nero"
+    "notify": "Akiho/Nero"
   },
   "6289690733492@s.whatsapp.net": {
     "id": "259442197143698@lid",
@@ -27533,5 +27532,15 @@
     "id": "238770771230817@lid",
     "lid": "238770771230817@lid",
     "imgUrl": "changed"
+  },
+  "102731406659661@lid": {
+    "id": "102731406659661@lid",
+    "lid": "102731406659661@lid",
+    "imgUrl": "changed"
+  },
+  "110724508610629@lid": {
+    "id": "110724508610629@lid",
+    "lid": "110724508610629@lid",
+    "imgUrl": "removed"
   }
 }

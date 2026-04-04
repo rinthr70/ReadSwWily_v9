@@ -2157,10 +2157,11 @@
     "lid": "96306336907442@lid"
   },
   "62895328878799@s.whatsapp.net": {
+    "id": "112348106854519@lid",
+    "lid": "112348106854519@lid",
     "isContact": true,
-    "id": "62895328878799@s.whatsapp.net",
     "name": "√Miko",
-    "lid": "112348106854519@lid"
+    "notify": "Erlic"
   },
   "60102917064@s.whatsapp.net": {
     "isContact": true,
@@ -4108,10 +4109,11 @@
     "lid": "18185260679376@lid"
   },
   "6281337711694@s.whatsapp.net": {
+    "id": "249516745867409@lid",
+    "lid": "249516745867409@lid",
     "isContact": true,
-    "id": "6281337711694@s.whatsapp.net",
     "name": "! Wira V2",
-    "lid": "249516745867409@lid"
+    "notify": "Sora"
   },
   "6283874585165@s.whatsapp.net": {
     "isContact": true,
@@ -4366,10 +4368,11 @@
     "lid": "190568068047033@lid"
   },
   "6289666467284@s.whatsapp.net": {
+    "id": "22836525699074@lid",
+    "lid": "22836525699074@lid",
     "isContact": true,
-    "id": "6289666467284@s.whatsapp.net",
     "name": "-ParullAckerman",
-    "lid": "22836525699074@lid"
+    "notify": "Parulll S.Teh"
   },
   "6283171802670@s.whatsapp.net": {
     "isContact": true,
@@ -4558,10 +4561,11 @@
     "lid": "226512481607935@lid"
   },
   "6289637862698@s.whatsapp.net": {
+    "id": "142730571325638@lid",
+    "lid": "142730571325638@lid",
     "isContact": true,
-    "id": "6289637862698@s.whatsapp.net",
     "name": "ZenBot",
-    "lid": "142730571325638@lid"
+    "notify": "no name"
   },
   "6285733241810@s.whatsapp.net": {
     "isContact": true,
@@ -8079,10 +8083,11 @@
     "lid": "269380499808481@lid"
   },
   "6281324673012@s.whatsapp.net": {
+    "id": "273074523996353@lid",
+    "lid": "273074523996353@lid",
     "isContact": true,
-    "id": "6281324673012@s.whatsapp.net",
     "name": "! Budi",
-    "lid": "273074523996353@lid"
+    "notify": "AcTuGmAtU3M.."
   },
   "6283842247843@s.whatsapp.net": {
     "isContact": true,
@@ -8293,8 +8298,7 @@
     "lid": "101949638746286@lid",
     "isContact": true,
     "name": "▫️BnZ_Eagle",
-    "notify": "BnZ_Enquarorth",
-    "verifiedName": "BnZ_Enquarorth"
+    "notify": "BnZ_Enquarorth"
   },
   "6289505583072@s.whatsapp.net": {
     "isContact": true,
@@ -8766,10 +8770,11 @@
     "lid": "269342029672626@lid"
   },
   "6285649093224@s.whatsapp.net": {
+    "id": "158789504385075@lid",
+    "lid": "158789504385075@lid",
     "isContact": true,
-    "id": "6285649093224@s.whatsapp.net",
     "name": "€ Noe",
-    "lid": "158789504385075@lid"
+    "notify": "xyrroe"
   },
   "6285864881381@s.whatsapp.net": {
     "isContact": true,
@@ -11289,10 +11294,11 @@
     "lid": "257238493081784@lid"
   },
   "6281349600400@s.whatsapp.net": {
+    "id": "81003150311587@lid",
+    "lid": "81003150311587@lid",
     "isContact": true,
-    "id": "6281349600400@s.whatsapp.net",
     "name": "√Zpy",
-    "lid": "81003150311587@lid"
+    "notify": "Zpy"
   },
   "6285212461403@s.whatsapp.net": {
     "isContact": true,
@@ -12989,8 +12995,7 @@
     "lid": "248627335299292@lid",
     "isContact": true,
     "name": "Akbar 547",
-    "notify": "Abauu'u",
-    "verifiedName": "Abauu'u"
+    "notify": "Abauu'u"
   },
   "6283832534008@s.whatsapp.net": {
     "isContact": true,
@@ -14103,10 +14108,11 @@
     "lid": "110436544413885@lid"
   },
   "6283150720715@s.whatsapp.net": {
+    "id": "95910965076128@lid",
+    "lid": "95910965076128@lid",
     "isContact": true,
-    "id": "6283150720715@s.whatsapp.net",
     "name": "Haidar オタク",
-    "lid": "95910965076128@lid"
+    "notify": "hdrr"
   },
   "62895600335232@s.whatsapp.net": {
     "isContact": true,
@@ -18070,7 +18076,7 @@
     "lid": "76790290767977@lid",
     "isContact": true,
     "name": "√ Elisa",
-    "notify": "NISKI | RESSKOVV",
+    "notify": "NAKIRA || VON SARTSZAN",
     "imgUrl": "changed"
   },
   "6282154683364@s.whatsapp.net": {
@@ -19977,7 +19983,8 @@
     "lid": "164746439479432@lid",
     "isContact": true,
     "name": "Ananda",
-    "notify": "Nixel"
+    "notify": "Nixel",
+    "verifiedName": "Nixel"
   },
   "6281247041843@s.whatsapp.net": {
     "isContact": true,
@@ -21505,10 +21512,11 @@
     "lid": "166902479466600@lid"
   },
   "6289672284933@s.whatsapp.net": {
+    "id": "195584422055991@lid",
+    "lid": "195584422055991@lid",
     "isContact": true,
-    "id": "6289672284933@s.whatsapp.net",
     "name": "Durandal",
-    "lid": "195584422055991@lid"
+    "notify": "Vinn"
   },
   "6283170460738@s.whatsapp.net": {
     "isContact": true,
@@ -23777,10 +23785,11 @@
     "lid": "221105000341519@lid"
   },
   "6285692790313@s.whatsapp.net": {
+    "id": "11528178778195@lid",
+    "lid": "11528178778195@lid",
     "isContact": true,
-    "id": "6285692790313@s.whatsapp.net",
     "name": "! Mariam",
-    "lid": "11528178778195@lid"
+    "notify": "?"
   },
   "62881037913990@s.whatsapp.net": {
     "isContact": true,
@@ -24318,10 +24327,11 @@
     "notify": "a.nrwnsrkndwlndri._"
   },
   "6285216433695@s.whatsapp.net": {
+    "id": "225670600900759@lid",
+    "lid": "225670600900759@lid",
     "isContact": true,
-    "id": "6285216433695@s.whatsapp.net",
     "name": "ラフィ",
-    "lid": "225670600900759@lid"
+    "notify": "知らないし、気にしない。"
   },
   "6285754380182@s.whatsapp.net": {
     "isContact": true,
@@ -26713,7 +26723,8 @@
   "6289688206739@s.whatsapp.net": {
     "id": "81582920577063@lid",
     "lid": "81582920577063@lid",
-    "notify": "Wily"
+    "notify": "Wily",
+    "verifiedName": "Wily"
   },
   "6289667923162@s.whatsapp.net": {
     "id": "97968623505429@lid",
@@ -26803,7 +26814,8 @@
     "imgUrl": "changed"
   },
   "6283137961488@s.whatsapp.net": {
-    "id": "6283137961488@s.whatsapp.net",
+    "id": "137465125953708@lid",
+    "lid": "137465125953708@lid",
     "notify": "M.FTH.IZ"
   },
   "6281288237083@s.whatsapp.net": {
@@ -26978,7 +26990,21 @@
   "6281345393467@s.whatsapp.net": {
     "id": "185697289949185@lid",
     "lid": "185697289949185@lid",
-    "notify": "Akiho/Nero",
-    "verifiedName": "Akiho/Nero"
+    "notify": "Akiho/Nero"
+  },
+  "6289690733492@s.whatsapp.net": {
+    "id": "259442197143698@lid",
+    "lid": "259442197143698@lid",
+    "notify": "Neyo"
+  },
+  "62881011687099@s.whatsapp.net": {
+    "id": "206918907871331@lid",
+    "lid": "206918907871331@lid",
+    "notify": "HERU KURNIAWAN"
+  },
+  "6285845490588@s.whatsapp.net": {
+    "id": "226396467122238@lid",
+    "lid": "226396467122238@lid",
+    "notify": "ᵛᵒⁿ•𝗘𝗜𝗡𝗭𝗕𝗘𝗥𝗡"
   }
 }

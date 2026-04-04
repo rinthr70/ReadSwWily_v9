@@ -18,12 +18,15 @@ import JSONDB from '../db/json.js'
 
 /* ================= LOGGER ================= */
 const silentLogger = pino({ level: 'silent' })
+
+/* ================= KONSTANTA ================= */
+const PAIRING_TIMEOUT_MS = 3 * 60 * 1000 // 3 menit
+
 /* ================= STATE ================= */
 const jadibotMap = new Map()
 const pairingRequested = new Set()
 const stoppingJadibot = new Set()
 const pairingTimeout = new Map()
-const pairingResent = new Set()
 
 /* ================= UTILS ================= */
 function loadConfig() {
@@ -42,6 +45,74 @@ function maskNumber(num) {
 
 function isSessionValid(sessionDir) {
   return fs.existsSync(path.join(sessionDir, 'creds.json'))
+}
+
+function formatPairingCode(code) {
+  // Format: XXXX-XXXX supaya lebih mudah dibaca
+  const clean = String(code).replace(/[^A-Z0-9]/gi, '').toUpperCase()
+  if (clean.length === 8) return clean.slice(0, 4) + '-' + clean.slice(4)
+  return code
+}
+
+/* ================= PESAN RAPIH ================= */
+function msgPairingCode(code, number) {
+  const formatted = formatPairingCode(code)
+  const masked = maskNumber(number)
+  return (
+    `╔══════════════════════╗\n` +
+    `║   🤖  *J A D I B O T*   ║\n` +
+    `╚══════════════════════╝\n\n` +
+    `📱 *Nomor:* ${masked}\n\n` +
+    `🔑 *Kode Pairing:*\n` +
+    `┌─────────────────┐\n` +
+    `│   *${formatted}*   │\n` +
+    `└─────────────────┘\n\n` +
+    `📋 *Cara Memasukkan Kode:*\n` +
+    `1️⃣ Buka WhatsApp di HP kamu\n` +
+    `2️⃣ Ketuk ⋮ (titik tiga) → *Perangkat Tertaut*\n` +
+    `3️⃣ Ketuk *Tautkan Perangkat*\n` +
+    `4️⃣ Pilih *Tautkan dengan nomor telepon*\n` +
+    `5️⃣ Masukkan kode di atas\n\n` +
+    `⏳ *Batas waktu: 3 menit*\n` +
+    `⚠️ Jika gagal, ketik *.jadibot* ulang`
+  )
+}
+
+function msgPairingExpired(number) {
+  const masked = maskNumber(number)
+  return (
+    `╔══════════════════════╗\n` +
+    `║   ⏰  *WAKTU HABIS*   ║\n` +
+    `╚══════════════════════╝\n\n` +
+    `📱 *Nomor:* ${masked}\n\n` +
+    `❌ Kode pairing sudah *kedaluwarsa*\n` +
+    `karena tidak digunakan dalam *3 menit*.\n\n` +
+    `🔄 Sesi otomatis dihapus.\n` +
+    `💡 Ketik *.jadibot ${number}* untuk coba lagi.`
+  )
+}
+
+function msgConnected(number) {
+  const masked = maskNumber(number)
+  const now = new Date().toLocaleString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  })
+  return (
+    `╔══════════════════════╗\n` +
+    `║  ✅  *JADIBOT AKTIF*  ║\n` +
+    `╚══════════════════════╝\n\n` +
+    `📱 *Nomor:* ${masked}\n` +
+    `🕐 *Waktu:* ${now} WIB\n\n` +
+    `🎉 Jadibot berhasil terhubung!\n` +
+    `Bot sudah siap menerima perintah.\n\n` +
+    `📌 *Perintah Penting:*\n` +
+    `• *.menu* — Lihat semua fitur\n` +
+    `• *.stopjadibot ${number}* — Matikan bot ini\n` +
+    `• *.listjadibot* — Lihat daftar bot aktif\n\n` +
+    `_Powered by Wily Bot_ 🤖`
+  )
 }
 
 /* ================= START JADIBOT ================= */
@@ -78,73 +149,81 @@ async function startJadibot(number, sendReply, mainBotNumber) {
   sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
     const reason = lastDisconnect?.error?.output?.statusCode
 
-    /* ===== PAIRING CODE (AUTO RESET 60 DETIK) ===== */
-if (
-  connection === 'connecting' &&
-  !state.creds?.registered &&
-  !pairingRequested.has(number)
-) {
-  pairingRequested.add(number)
+    /* ===== PAIRING CODE — TIMEOUT 3 MENIT ===== */
+    if (
+      connection === 'connecting' &&
+      !state.creds?.registered &&
+      !pairingRequested.has(number)
+    ) {
+      pairingRequested.add(number)
 
-  setTimeout(async () => {
-    try {
-      const code = await sock.requestPairingCode(number)
-      await sendReply(
-        `🔗 *JADIBOT*\n\nKode Pairing:\n*${code}*\n\n⏳ Berlaku 60 detik\nWhatsApp → Perangkat Tertaut`
-      )
-    } catch {}
-  }, 1200)
+      // Kirim kode pairing setelah koneksi stabil
+      setTimeout(async () => {
+        try {
+          const code = await sock.requestPairingCode(number)
+          await sendReply(msgPairingCode(code, number))
+        } catch (err) {
+          console.error(`[JADIBOT] Gagal request pairing code ${number}:`, err?.message)
+        }
+      }, 1500)
 
-  // ⏱️ AUTO RESET (60 DETIK) + RESEND 1x
-const timeout = setTimeout(async () => {
-  if (!state.creds?.registered) {
-    pairingRequested.delete(number)
-    pairingTimeout.delete(number)
+      // ⏱️ AUTO STOP setelah 3 MENIT jika belum terhubung
+      const timeout = setTimeout(async () => {
+        if (state.creds?.registered || jadibotMap.has(number)) return
 
-    if (pairingResent.has(number)) {
-      console.log(`[JADIBOT] Pairing expired ${number}, stop resend`)
-      return
+        console.log(`[JADIBOT] ⏰ Pairing timeout 3 menit → ${number} → sesi dihapus`)
+
+        pairingRequested.delete(number)
+        pairingTimeout.delete(number)
+
+        // Tutup socket
+        try {
+          sock.ev.removeAllListeners()
+          if (sock.ws) sock.ws.close()
+        } catch {}
+
+        // Hapus sesi
+        setTimeout(() => {
+          if (fs.existsSync(sessionDir)) {
+            fs.rmSync(sessionDir, { recursive: true, force: true })
+          }
+        }, 500)
+
+        // Kirim notif ke pengirim
+        try {
+          await sendReply(msgPairingExpired(number))
+        } catch {}
+      }, PAIRING_TIMEOUT_MS)
+
+      pairingTimeout.set(number, timeout)
     }
-
-    pairingResent.add(number)
-    console.log(`[JADIBOT] Pairing expired ${number}, resend once`)
-
-    try {
-      const code = await sock.requestPairingCode(number)
-      await sendReply(
-        `🔗 *JADIBOT*\n\nKode Pairing (Terakhir):\n*${code}*\n\n⏳ Berlaku 60 detik\nJika habis, ketik .jadibot ulang`
-      )
-    } catch {}
-  }
-}, 60 * 1000)
-
-pairingTimeout.set(number, timeout)
-}
 
     /* ===== CONNECTED ===== */
     if (connection === 'open') {
-  jadibotMap.set(number, sock)
-  pairingRequested.delete(number)
-  pairingResent.delete(number)
+      jadibotMap.set(number, sock)
+      pairingRequested.delete(number)
 
-  if (pairingTimeout.has(number)) {
-    clearTimeout(pairingTimeout.get(number))
-    pairingTimeout.delete(number)
-  }
+      if (pairingTimeout.has(number)) {
+        clearTimeout(pairingTimeout.get(number))
+        pairingTimeout.delete(number)
+      }
 
-  console.log(`[JADIBOT] ${number} CONNECTED`)
-}
+      console.log(`[JADIBOT] ✅ ${number} CONNECTED`)
+
+      // Kirim pesan sambutan rapih ke pengirim
+      try {
+        await sendReply(msgConnected(number))
+      } catch {}
+    }
 
     /* ===== DISCONNECTED ===== */
     if (connection === 'close') {
+      if (pairingTimeout.has(number)) {
+        clearTimeout(pairingTimeout.get(number))
+        pairingTimeout.delete(number)
+      }
 
-  if (pairingTimeout.has(number)) {
-    clearTimeout(pairingTimeout.get(number))
-    pairingTimeout.delete(number)
-  }
-
-  pairingRequested.delete(number)
-  pairingResent.delete(number)
+      pairingRequested.delete(number)
 
       /* STOP MANUAL DARI BOT UTAMA */
       if (stoppingJadibot.has(number)) {
@@ -162,9 +241,7 @@ pairingTimeout.set(number, timeout)
           fs.rmSync(sessionDir, { recursive: true, force: true })
         }
 
-        console.log(
-          `[JADIBOT] ${number} LOGOUT PAKSA → session dihapus (perlu pairing ulang)`
-        )
+        console.log(`[JADIBOT] ${number} LOGOUT PAKSA → session dihapus`)
         return
       }
 
@@ -185,10 +262,10 @@ pairingTimeout.set(number, timeout)
 
   /* ================= MESSAGE ================= */
   sock.ev.on('messages.upsert', async ({ messages, type }) => {
-  if (type !== 'notify') return
+    if (type !== 'notify') return
 
-  for (const msg of messages) {
-        if (!msg.message) continue
+    for (const msg of messages) {
+      if (!msg.message) continue
 
       try {
         await messageHandler(
@@ -196,7 +273,7 @@ pairingTimeout.set(number, timeout)
           sock
         )
       } catch (err) {
-          console.error('[JADIBOT MESSAGE ERROR]', err)
+        console.error('[JADIBOT MESSAGE ERROR]', err)
       }
     }
   })
@@ -208,37 +285,42 @@ async function stopJadibot(number, sendReply) {
   const sock = jadibotMap.get(number)
 
   if (!sock) {
-    return sendReply(`❌ Jadibot ${number} tidak aktif`)
+    return sendReply(
+      `╔══════════════════════╗\n` +
+      `║   ❌  *GAGAL STOP*   ║\n` +
+      `╚══════════════════════╝\n\n` +
+      `Jadibot *${maskNumber(number)}* tidak aktif atau sudah dihentikan.`
+    )
   }
 
   const sessionDir = path.join(process.cwd(), 'jadibot', number)
 
-  // tandai stop manual
   stoppingJadibot.add(number)
 
   try {
-    // 1️⃣ MATIKAN SEMUA EVENT
     sock.ev.removeAllListeners()
-
-    // 2️⃣ TUTUP WS
     if (sock.ws) sock.ws.close()
   } catch {}
 
-  // 3️⃣ HAPUS DARI MAP
   jadibotMap.delete(number)
-
-  // 🔥 FIX PENTING: BERSIHKAN FLAG STOP
   stoppingJadibot.delete(number)
 
-  // 4️⃣ HAPUS SESSION SETELAH SOCKET MATI
   setTimeout(() => {
     if (fs.existsSync(sessionDir)) {
       fs.rmSync(sessionDir, { recursive: true, force: true })
     }
   }, 500)
 
-  sendReply(`✅ Jadibot ${number} dihentikan & sesi dihapus`)
+  sendReply(
+    `╔══════════════════════╗\n` +
+    `║  🛑  *JADIBOT STOP*  ║\n` +
+    `╚══════════════════════╝\n\n` +
+    `✅ Jadibot *${maskNumber(number)}* berhasil dihentikan.\n` +
+    `🗑️ Sesi telah dihapus.\n\n` +
+    `💡 Ketik *.jadibot ${number}* untuk aktifkan kembali.`
+  )
 }
+
 /* ================= EXPORT ================= */
 export {
   startJadibot,

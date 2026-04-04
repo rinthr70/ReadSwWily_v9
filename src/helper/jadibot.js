@@ -180,36 +180,34 @@ async function sendPairingWithButton(code, number, mainSock, senderJid, sendRepl
       const msg = generateWAMessageFromContent(
         senderJid,
         {
-          interactiveMessage: {
-            header: {
-              title: '🤖 J A D I B O T',
-              hasMediaAttachment: false
-            },
-            body: { text: bodyText },
-            footer: { text: footerText },
-            nativeFlowMessage: {
-              buttons: [
-                {
-                  name: 'cta_copy',
-                  buttonParamsJson: JSON.stringify({
-                    display_text: '📋 Salin Kode',
-                    copy_code: rawCode
-                  })
-                }
-              ],
-              messageParamsJson: '',
-              messageVersion: 1
-            }
+          listMessage: {
+            title: '🤖 J A D I B O T',
+            description: bodyText,
+            buttonText: '📋 Salin Kode Pairing',
+            footerText: footerText,
+            listType: 1,
+            sections: [
+              {
+                title: '🔑 Kode Pairing',
+                rows: [
+                  {
+                    title: `*${formatted}*`,
+                    description: '👆 Ketuk → kode terkirim ke chat → long press → salin',
+                    rowId: rawCode
+                  }
+                ]
+              }
+            ]
           }
         },
         { userJid: mainSock.user.id }
       )
 
       await mainSock.relayMessage(senderJid, msg.message, { messageId: msg.key.id })
-      console.log(`[JADIBOT] ✅ Tombol salin kode berhasil dikirim ke ${senderJid}`)
+      console.log(`[JADIBOT] ✅ List button kode berhasil dikirim ke ${senderJid}`)
       return
     } catch (err) {
-      console.error('[JADIBOT] Tombol salin gagal, fallback ke teks:', err.message)
+      console.error('[JADIBOT] List button gagal, fallback ke teks:', err.message)
     }
   }
 

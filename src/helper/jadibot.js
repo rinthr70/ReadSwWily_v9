@@ -197,15 +197,33 @@ async function startJadibot(number, sendReply, mainBotNumber) {
     ) {
       pairingRequested.add(number)
 
-      // Kirim kode pairing setelah koneksi stabil
+      // Kirim kode pairing setelah koneksi stabil (dengan retry)
       setTimeout(async () => {
-        try {
-          const code = await sock.requestPairingCode(number)
-          await sendReply(msgPairingCode(code, number))
-        } catch (err) {
-          console.error(`[JADIBOT] Gagal request pairing code ${number}:`, err?.message)
+        let retries = 3
+        while (retries > 0) {
+          try {
+            const code = await sock.requestPairingCode(number)
+            await sendReply(msgPairingCode(code, number))
+            break
+          } catch (err) {
+            retries--
+            console.error(`[JADIBOT] Gagal request pairing code ${number} (sisa retry: ${retries}):`, err?.message)
+            if (retries > 0) await delay(2000)
+          }
         }
-      }, 1500)
+        if (retries === 0) {
+          try {
+            await sendReply(
+              `╔══════════════════════╗\n` +
+              `║   ❌  *GAGAL PAIRING*   ║\n` +
+              `╚══════════════════════╝\n\n` +
+              `⚠️ Gagal mendapatkan kode pairing untuk *${maskNumber(number)}*.\n` +
+              `Koneksi terputus sebelum kode berhasil dibuat.\n\n` +
+              `💡 Ketik *.jadibot ${number}* untuk coba lagi.`
+            )
+          } catch {}
+        }
+      }, 2000)
 
       // ⏱️ AUTO STOP setelah 3 MENIT jika belum terhubung
       const timeout = setTimeout(async () => {

@@ -1010,10 +1010,11 @@
     "lid": "118317759119535@lid"
   },
   "62882003110997@s.whatsapp.net": {
+    "id": "119872990265479@lid",
+    "lid": "119872990265479@lid",
     "isContact": true,
-    "id": "62882003110997@s.whatsapp.net",
     "name": "اعشقك",
-    "lid": "119872990265479@lid"
+    "notify": "si"
   },
   "6285895374238@s.whatsapp.net": {
     "isContact": true,

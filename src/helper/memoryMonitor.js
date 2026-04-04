@@ -161,11 +161,13 @@ export class MemoryMonitor {
                         const bold  = '\x1b[1m';
                         const gray  = '\x1b[90m';
 
+                        console.log(`${gray}··················································${reset}`);
                         console.log(`${cyan}[MemoryMonitor]${reset} ${icon} ${color}${bold}${status}${reset}`);
-                        console.log(`${gray}  Bot   :${reset} ${color}${bold}${formatBytes(currentUsage)}${reset} ${gray}/ ${percentage}% dari ${limitGB} GB${reset}`);
+                        console.log(`${gray}  Bot   :${reset} ${color}${bold}${formatBytes(currentUsage)}${reset} ${gray}(${percentage}% dari ${limitGB} GB)${reset}`);
                         console.log(`${gray}  Heap  :${reset} ${heapMB} MB`);
-                        console.log(`${gray}  Sys   :${reset} ${sysColor}${bold}${sysPercentage}%${reset} ${gray}(${sysGB}/${sysTGB} GB)${reset}`);
+                        console.log(`${gray}  Sys   :${reset} ${sysColor}${bold}${sysPercentage}%${reset} ${gray}(${sysGB} / ${sysTGB} GB)${reset}`);
                         console.log(`${gray}  Load  :${reset} [${color}${bar}${reset}] ${color}${percentage}%${reset}`);
+                        console.log(`${gray}··················································${reset}`);
                 }
 
                 if (currentUsage >= this.memoryLimit) {

@@ -467,6 +467,7 @@ async function main() {
                         const userId = hisoka.user?.id?.split(':')[0] || '-';
                         const userName = hisoka.user?.name || '-';
                         hisoka.mainBotNumber = userId; // wajib untuk jadibot
+                        console.log('\x1b[90m··················································\x1b[0m');
                         console.log(`\x1b[32m[Bot] ✅ Connected: ${userId} | ${userName}\x1b[39m`);
 
                         const privacySettings = await hisoka.fetchPrivacySettings();

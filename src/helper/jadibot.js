@@ -5,8 +5,7 @@ import makeWASocket, {
   fetchLatestBaileysVersion,
   DisconnectReason,
   jidNormalizedUser,
-  delay,
-  generateWAMessageFromContent
+  delay
 } from 'baileys'
 
 import fs from 'fs'
@@ -153,70 +152,8 @@ function msgLoggedOut(number, remainingList) {
   )
 }
 
-/* ================= KIRIM PAIRING CODE + TOMBOL SALIN ================= */
-async function sendPairingWithButton(code, number, mainSock, senderJid, sendReply) {
-  const formatted = formatPairingCode(code)
-  const masked = maskNumber(number)
-  const rawCode = String(code).replace(/[^A-Z0-9]/gi, '').toUpperCase()
-
-  const bodyText =
-    `📱 *Nomor:* ${masked}\n\n` +
-    `🔑 *Kode Pairing:*\n` +
-    `┌─────────────────┐\n` +
-    `│   *${formatted}*   │\n` +
-    `└─────────────────┘\n\n` +
-    `📋 *Cara Memasukkan Kode:*\n` +
-    `1️⃣ Buka WhatsApp di HP kamu\n` +
-    `2️⃣ Ketuk ⋮ (titik tiga) → *Perangkat Tertaut*\n` +
-    `3️⃣ Ketuk *Tautkan Perangkat*\n` +
-    `4️⃣ Pilih *Tautkan dengan nomor telepon*\n` +
-    `5️⃣ Masukkan kode di atas\n\n` +
-    `⏳ *Batas waktu: 3 menit*`
-
-  const footerText = `⚠️ Jika gagal, ketik .jadibot ulang`
-
-  if (mainSock && senderJid) {
-    try {
-      const msg = generateWAMessageFromContent(
-        senderJid,
-        {
-          listMessage: {
-            title: '🤖 J A D I B O T',
-            description: bodyText,
-            buttonText: '📋 Salin Kode Pairing',
-            footerText: footerText,
-            listType: 1,
-            sections: [
-              {
-                title: '🔑 Kode Pairing',
-                rows: [
-                  {
-                    title: `*${formatted}*`,
-                    description: '👆 Ketuk → kode terkirim ke chat → long press → salin',
-                    rowId: rawCode
-                  }
-                ]
-              }
-            ]
-          }
-        },
-        { userJid: mainSock.user.id }
-      )
-
-      await mainSock.relayMessage(senderJid, msg.message, { messageId: msg.key.id })
-      console.log(`[JADIBOT] ✅ List button kode berhasil dikirim ke ${senderJid}`)
-      return
-    } catch (err) {
-      console.error('[JADIBOT] List button gagal, fallback ke teks:', err.message)
-    }
-  }
-
-  // Fallback teks biasa jika interactive gagal
-  await sendReply(msgPairingCode(code, number))
-}
-
 /* ================= START JADIBOT ================= */
-async function startJadibot(number, sendReply, mainBotNumber, mainSock = null, senderJid = null) {
+async function startJadibot(number, sendReply, mainBotNumber) {
   number = number.replace(/[^0-9]/g, '')
   const sessionDir = path.join(process.cwd(), 'jadibot', number)
 
@@ -264,7 +201,7 @@ async function startJadibot(number, sendReply, mainBotNumber, mainSock = null, s
       setTimeout(async () => {
         try {
           const code = await sock.requestPairingCode(number)
-          await sendPairingWithButton(code, number, mainSock, senderJid, sendReply)
+          await sendReply(msgPairingCode(code, number))
         } catch (err) {
           console.error(`[JADIBOT] Gagal request pairing code ${number}:`, err?.message)
         }
@@ -367,7 +304,7 @@ async function startJadibot(number, sendReply, mainBotNumber, mainSock = null, s
       /* ===== RECONNECT NORMAL ===== */
       console.log(`[JADIBOT] ${number} reconnecting...`)
       setTimeout(() => {
-        startJadibot(number, sendReply, mainBotNumber, mainSock, senderJid)
+        startJadibot(number, sendReply, mainBotNumber)
       }, 3000)
     }
   })

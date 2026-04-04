@@ -3382,9 +3382,7 @@ text += `╰═════════════════╯`;
                                 await startJadibot(
                                         number,
                                         (text) => m.reply(text),
-                                        mainNum,
-                                        hisoka,
-                                        m.from
+                                        mainNum
                                 );
                         }
                                 break;

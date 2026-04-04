@@ -183,10 +183,19 @@ export function startAutoCleaner(intervalHours = 6) {
 }
 
 /**
- * Bersihkan pre-key files yang sudah terpakai (stale) dari session Baileys.
- * Pre-key dengan ID < firstUnuploadedPreKeyId sudah dikonsumsi WhatsApp
- * dan tidak dibutuhkan lagi — aman untuk dihapus.
- * Ini mencegah akumulasi ratusan file kecil yang memperlambat startup.
+ * Bersihkan pre-key files yang sudah benar-benar tidak dibutuhkan lagi.
+ *
+ * CATATAN PENTING — mengapa perlu buffer aman:
+ * Pre-key yang sudah diunggah ke server WhatsApp (ID < firstUnuploadedPreKeyId)
+ * belum tentu sudah DIPAKAI. Server WhatsApp menyimpan pool pre-key dan
+ * membagi-bagikannya ke kontak baru yang ingin memulai sesi terenkripsi.
+ * Bot tetap membutuhkan file pre-key lokal untuk mendekripsi pesan pertama
+ * dari kontak baru tersebut — jika file sudah dihapus, bot tidak bisa
+ * merespons kontak baru (terlihat online tapi diam/bisu).
+ *
+ * Solusi: hanya hapus pre-key yang ID-nya lebih dari SAFE_BUFFER di bawah
+ * firstUnuploadedPreKeyId. Buffer 200 cukup karena WhatsApp biasanya
+ * menyimpan maksimal 100–200 pre-key per perangkat di servernya.
  */
 export function cleanStaleSessionFiles(sessionDir) {
     try {
@@ -196,6 +205,16 @@ export function cleanStaleSessionFiles(sessionDir) {
         const creds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'))
         const firstUnuploaded = creds.firstUnuploadedPreKeyId ?? creds.nextPreKeyId ?? 0
         if (!firstUnuploaded || firstUnuploaded <= 0) return
+
+        // Hanya hapus pre-key yang sudah sangat jauh di bawah threshold upload.
+        // Buffer 200 memastikan pre-key yang masih ada di server WhatsApp
+        // tetap tersedia secara lokal untuk mendekripsi sesi baru.
+        const SAFE_BUFFER = 200
+        const safeDeleteBefore = firstUnuploaded - SAFE_BUFFER
+        if (safeDeleteBefore <= 0) {
+            console.log(`\x1b[32m[SessionCleaner]\x1b[39m Session sudah bersih`)
+            return
+        }
 
         const files = fs.readdirSync(sessionDir)
         let deletedPreKeys = 0
@@ -207,11 +226,11 @@ export function cleanStaleSessionFiles(sessionDir) {
         for (const file of files) {
             const filePath = path.join(sessionDir, file)
 
-            // Hapus pre-key lama yang sudah terpakai
+            // Hapus pre-key yang sudah sangat jauh di bawah batas aman
             if (file.startsWith('pre-key-') && file.endsWith('.json')) {
                 const idStr = file.replace('pre-key-', '').replace('.json', '')
                 const id = parseInt(idStr, 10)
-                if (!isNaN(id) && id < firstUnuploaded) {
+                if (!isNaN(id) && id < safeDeleteBefore) {
                     try {
                         const stat = fs.statSync(filePath)
                         deletedSize += stat.size

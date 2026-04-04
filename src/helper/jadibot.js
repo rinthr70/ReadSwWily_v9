@@ -115,6 +115,42 @@ function msgConnected(number) {
   )
 }
 
+function msgLoggedOut(number, remainingList) {
+  const masked = maskNumber(number)
+  const now = new Date().toLocaleString('id-ID', {
+    timeZone: 'Asia/Jakarta',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  })
+
+  let listPart
+  if (remainingList.length === 0) {
+    listPart = `❌ Tidak ada jadibot aktif saat ini.`
+  } else {
+    const items = remainingList.map((v, i) => `│ ${i + 1}. +${v}`).join('\n')
+    listPart = (
+      `📊 *Jadibot Masih Aktif (${remainingList.length}):*\n` +
+      `┌─────────────────────\n` +
+      `${items}\n` +
+      `└─────────────────────`
+    )
+  }
+
+  return (
+    `╔══════════════════════╗\n` +
+    `║  ⚠️  *JADIBOT LOGOUT*  ║\n` +
+    `╚══════════════════════╝\n\n` +
+    `📱 *Nomor:* ${masked}\n` +
+    `🕐 *Waktu:* ${now} WIB\n\n` +
+    `🚨 Jadibot ini telah *di-logout* dari\n` +
+    `WhatsApp (Perangkat Tertaut dihapus).\n\n` +
+    `🗑️ Sesi otomatis dihapus.\n\n` +
+    `${listPart}\n\n` +
+    `💡 Ketik *.jadibot ${number}* untuk\n` +
+    `menghubungkan kembali.`
+  )
+}
+
 /* ================= START JADIBOT ================= */
 async function startJadibot(number, sendReply, mainBotNumber) {
   number = number.replace(/[^0-9]/g, '')
@@ -235,13 +271,22 @@ async function startJadibot(number, sendReply, mainBotNumber) {
 
       /* ===== LOGOUT PAKSA DARI WHATSAPP ===== */
       if (reason === DisconnectReason.loggedOut) {
+        // Hapus dari map DULU baru ambil sisa list (agar nomor ini tidak muncul di list)
         jadibotMap.delete(number)
 
         if (fs.existsSync(sessionDir)) {
           fs.rmSync(sessionDir, { recursive: true, force: true })
         }
 
-        console.log(`[JADIBOT] ${number} LOGOUT PAKSA → session dihapus`)
+        console.log(`[JADIBOT] ⚠️ ${number} LOGOUT PAKSA → session dihapus`)
+
+        // Kirim notif real-time ke owner beserta sisa list jadibot aktif
+        const remainingList = [...jadibotMap.keys()]
+        try {
+          await sendReply(msgLoggedOut(number, remainingList))
+        } catch (err) {
+          console.error(`[JADIBOT] Gagal kirim notif logout ${number}:`, err?.message)
+        }
         return
       }
 

@@ -19983,8 +19983,7 @@
     "lid": "164746439479432@lid",
     "isContact": true,
     "name": "Ananda",
-    "notify": "Nixel",
-    "verifiedName": "Nixel"
+    "notify": "Nixel"
   },
   "6281247041843@s.whatsapp.net": {
     "isContact": true,
@@ -23581,10 +23580,11 @@
     "lid": "226362157736187@lid"
   },
   "6282161429908@s.whatsapp.net": {
+    "id": "131061380042825@lid",
+    "lid": "131061380042825@lid",
     "isContact": true,
-    "id": "6282161429908@s.whatsapp.net",
     "name": "√𝘚𝘩𝘦𝘯𝘢𝘢",
-    "lid": "131061380042825@lid"
+    "notify": "アダウォン"
   },
   "6283861981441@s.whatsapp.net": {
     "isContact": true,
@@ -24719,10 +24719,11 @@
     "lid": "209306691580082@lid"
   },
   "6282388417118@s.whatsapp.net": {
+    "id": "20749339349072@lid",
+    "lid": "20749339349072@lid",
     "isContact": true,
-    "id": "6282388417118@s.whatsapp.net",
     "name": "~kaguya",
-    "lid": "20749339349072@lid"
+    "notify": "Kaguya"
   },
   "6281398025454@s.whatsapp.net": {
     "isContact": true,
@@ -26723,8 +26724,7 @@
   "6289688206739@s.whatsapp.net": {
     "id": "81582920577063@lid",
     "lid": "81582920577063@lid",
-    "notify": "Wily",
-    "verifiedName": "Wily"
+    "notify": "Wily"
   },
   "6289667923162@s.whatsapp.net": {
     "id": "97968623505429@lid",
@@ -27006,5 +27006,27 @@
     "id": "226396467122238@lid",
     "lid": "226396467122238@lid",
     "notify": "ᵛᵒⁿ•𝗘𝗜𝗡𝗭𝗕𝗘𝗥𝗡"
+  },
+  "212611350872@s.whatsapp.net": {
+    "id": "46888711655466@lid",
+    "lid": "46888711655466@lid",
+    "notify": "— Fiora Sylvie"
+  },
+  "6281259313838@s.whatsapp.net": {
+    "id": "264836441194636@lid",
+    "lid": "264836441194636@lid",
+    "notify": "s10e4n10p"
+  },
+  "6285695279858@s.whatsapp.net": {
+    "isContact": true,
+    "id": "6285695279858@s.whatsapp.net",
+    "name": "pushkontak wa 254",
+    "lid": "42117137215551@lid"
+  },
+  "6287768451217@s.whatsapp.net": {
+    "isContact": true,
+    "id": "6287768451217@s.whatsapp.net",
+    "name": "! Dayat",
+    "lid": "178701341864060@lid"
   }
 }

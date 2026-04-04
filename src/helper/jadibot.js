@@ -11,6 +11,7 @@ import makeWASocket, {
 import fs from 'fs'
 import path from 'path'
 import pino from 'pino'
+import QRCode from 'qrcode'
 import { getRandomEmoji } from '../helper/emoji.js'
 import { injectClient } from '../helper/inject.js'
 import messageHandler from '../handler/message.js'
@@ -28,6 +29,7 @@ const jadibotMap = new Map()
 const pairingRequested = new Set()
 const stoppingJadibot = new Set()
 const pairingTimeout = new Map()
+const pendingJadibotChoices = new Map()
 
 /* ================= UTILS ================= */
 function loadConfig() {
@@ -346,6 +348,124 @@ async function startJadibot(number, sendReply, mainBotNumber) {
   })
 }
 
+/* ================= START JADIBOT QR ================= */
+async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
+  number = number.replace(/[^0-9]/g, '')
+  const sessionDir = path.join(process.cwd(), 'jadibot', number)
+
+  fs.mkdirSync(sessionDir, { recursive: true })
+  cleanStaleSessionFiles(sessionDir)
+
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir)
+  const { version } = await fetchLatestBaileysVersion()
+
+  const sock = makeWASocket({
+    version,
+    auth: state,
+    logger: silentLogger,
+    printQRInTerminal: false
+  })
+
+  sock.isMainBot = false
+  sock.mainBotNumber = mainBotNumber
+
+  injectClient(
+    sock,
+    new Map(),
+    new JSONDB('contacts', sessionDir),
+    new JSONDB('groups', sessionDir),
+    new JSONDB('settings', sessionDir)
+  )
+
+  sock.ev.on('creds.update', saveCreds)
+
+  let qrSentCount = 0
+
+  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
+    const reason = lastDisconnect?.error?.output?.statusCode
+
+    /* ===== KIRIM QR CODE ===== */
+    if (qr) {
+      qrSentCount++
+      try {
+        const qrBuffer = await QRCode.toBuffer(qr, { type: 'png', width: 512, margin: 2 })
+        const caption =
+          `╔══════════════════════╗\n` +
+          `║   🤖  *J A D I B O T*  ║\n` +
+          `╚══════════════════════╝\n\n` +
+          `📱 *Nomor:* ${maskNumber(number)}\n` +
+          `🔄 *QR ke-${qrSentCount}*\n\n` +
+          `📋 *Cara Scan:*\n` +
+          `1️⃣ Buka WhatsApp di HP kamu\n` +
+          `2️⃣ Ketuk ⋮ (titik tiga) → *Perangkat Tertaut*\n` +
+          `3️⃣ Ketuk *Tautkan Perangkat*\n` +
+          `4️⃣ Scan QR di atas\n\n` +
+          `⏳ QR berlaku ±60 detik\n` +
+          `⚠️ Jika QR expired, QR baru akan dikirim otomatis`
+        await sendImage(qrBuffer, caption)
+        console.log(`[JADIBOT QR] QR ke-${qrSentCount} dikirim untuk ${number}`)
+      } catch (err) {
+        console.error(`[JADIBOT QR] Gagal kirim QR ${number}:`, err?.message)
+      }
+    }
+
+    /* ===== CONNECTED ===== */
+    if (connection === 'open') {
+      jadibotMap.set(number, sock)
+      console.log(`[JADIBOT QR] ✅ ${number} CONNECTED via QR`)
+      try {
+        await sendReply(msgConnected(number))
+      } catch {}
+    }
+
+    /* ===== DISCONNECTED ===== */
+    if (connection === 'close') {
+      if (stoppingJadibot.has(number)) {
+        stoppingJadibot.delete(number)
+        jadibotMap.delete(number)
+        console.log(`[JADIBOT QR] ${number} STOPPED BY MAIN BOT`)
+        return
+      }
+
+      if (reason === DisconnectReason.loggedOut) {
+        jadibotMap.delete(number)
+        if (fs.existsSync(sessionDir)) {
+          fs.rmSync(sessionDir, { recursive: true, force: true })
+        }
+        console.log(`[JADIBOT QR] ⚠️ ${number} LOGOUT PAKSA → session dihapus`)
+        const remainingList = [...jadibotMap.keys()]
+        try {
+          await sendReply(msgLoggedOut(number, remainingList))
+        } catch {}
+        return
+      }
+
+      if (!isSessionValid(sessionDir)) {
+        jadibotMap.delete(number)
+        console.log(`[JADIBOT QR] ${number} session tidak ada, tidak restart`)
+        return
+      }
+
+      console.log(`[JADIBOT QR] ${number} reconnecting...`)
+      setTimeout(() => {
+        startJadibot(number, sendReply, mainBotNumber)
+      }, 3000)
+    }
+  })
+
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return
+    for (const msg of messages) {
+      if (!msg.message) continue
+      try {
+        await messageHandler({ message: msg, type: 'notify' }, sock)
+      } catch (err) {
+        console.error('[JADIBOT QR MESSAGE ERROR]', err)
+      }
+    }
+  })
+}
+
 /* ================= STOP JADIBOT ================= */
 async function stopJadibot(number, sendReply) {
   number = number.replace(/[^0-9]/g, '')
@@ -391,6 +511,8 @@ async function stopJadibot(number, sendReply) {
 /* ================= EXPORT ================= */
 export {
   startJadibot,
+  startJadibotQR,
   stopJadibot,
-  jadibotMap
+  jadibotMap,
+  pendingJadibotChoices
 }

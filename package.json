@@ -34,6 +34,7 @@
     "jintr": "^3.3.1",
     "pino": "^10.1.0",
     "play-dl": "^1.9.7",
+    "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "sharp": "^0.34.5",
     "wa-sticker-formatter": "^4.4.4",

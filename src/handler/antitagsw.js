@@ -146,21 +146,7 @@ export default async function handleAntiTagSW(message, hisoka) {
 
         console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | Grup: ${remoteJid}\x1b[39m`);
 
-        // Hapus pesan tag status — gunakan format exact seperti referensi
-        try {
-            await hisoka.sendMessage(remoteJid, {
-                delete: {
-                    remoteJid: remoteJid,
-                    fromMe: false,
-                    id: message.key.id,
-                    participant: message.key.participant
-                }
-            });
-        } catch (delErr) {
-            console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
-        }
-
-        // Update & simpan warning
+        // Update & simpan warning dulu
         if (!data.warnings[remoteJid]) data.warnings[remoteJid] = {};
         if (!data.warnings[remoteJid][senderJid]) data.warnings[remoteJid][senderJid] = 0;
         data.warnings[remoteJid][senderJid] += 1;
@@ -169,18 +155,58 @@ export default async function handleAntiTagSW(message, hisoka) {
         const maxWarnings = antiTagSWConfig.maxWarnings ?? 3;
         saveData(data);
 
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('id-ID', {
+            timeZone: 'Asia/Jakarta',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+        const dateStr = now.toLocaleDateString('id-ID', {
+            timeZone: 'Asia/Jakarta',
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+
         if (newWarn >= maxWarnings) {
-            // Reset warning lalu kick
+            // Reset warning
             delete data.warnings[remoteJid][senderJid];
             saveData(data);
 
+            const kickMsg =
+                `╭─────────────────────────────╮\n` +
+                `│   ⛔ *ANTI-TAG STATUS* ⛔    │\n` +
+                `╰─────────────────────────────╯\n` +
+                `\n` +
+                `👤 *Pelanggar:* @${senderNumber}\n` +
+                `📅 *Waktu:* ${timeStr} • ${dateStr}\n` +
+                `\n` +
+                `┌─────────────────────────────\n` +
+                `│ ⚠️  *Pelanggaran Terdeteksi*\n` +
+                `│ Mentag grup lewat STATUS WA\n` +
+                `└─────────────────────────────\n` +
+                `\n` +
+                `🚫 *Peringatan:* ${maxWarnings}/${maxWarnings}\n` +
+                `💥 *Status:* Telah di-*KICK* dari grup!\n` +
+                `\n` +
+                `_Jangan ulangi perbuatan ini di grup lain!_`;
+
+            // Reply dulu ke pesan pelanggar, baru hapus
             await hisoka.sendMessage(remoteJid, {
-                text:
-                    `🚨 *「 Tag Status Terdeteksi 」*\n\n` +
-                    `@${senderNumber} telah mentag grup lewat status sebanyak *${maxWarnings}x*.\n` +
-                    `💥 *Dikeluarkan dari grup!*`,
+                text: kickMsg,
                 contextInfo: { mentionedJid: [senderJid] }
-            });
+            }, { quoted: message });
+
+            // Hapus pesan tag status
+            try {
+                await hisoka.sendMessage(remoteJid, {
+                    delete: {
+                        remoteJid: remoteJid,
+                        fromMe: false,
+                        id: message.key.id,
+                        participant: message.key.participant
+                    }
+                });
+            } catch (delErr) {
+                console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
+            }
 
             try {
                 await hisoka.groupParticipantsUpdate(remoteJid, [senderJid], 'remove');
@@ -193,13 +219,48 @@ export default async function handleAntiTagSW(message, hisoka) {
                 });
             }
         } else {
+            // Isi bar peringatan
+            const filled = '▰'.repeat(newWarn);
+            const empty = '▱'.repeat(maxWarnings - newWarn);
+            const bar = filled + empty;
+
+            const warnMsg =
+                `╭─────────────────────────────╮\n` +
+                `│   ⚠️ *ANTI-TAG STATUS* ⚠️   │\n` +
+                `╰─────────────────────────────╯\n` +
+                `\n` +
+                `👤 *Pelanggar:* @${senderNumber}\n` +
+                `📅 *Waktu:* ${timeStr} • ${dateStr}\n` +
+                `\n` +
+                `┌─────────────────────────────\n` +
+                `│ 🚫 Dilarang mentag grup\n` +
+                `│    lewat *STATUS WhatsApp!*\n` +
+                `│ 🗑️  Pesan telah dihapus.\n` +
+                `└─────────────────────────────\n` +
+                `\n` +
+                `📊 *Peringatan:* ${bar} ${newWarn}/${maxWarnings}\n` +
+                `\n` +
+                `_${newWarn >= maxWarnings - 1 ? '⚠️ Peringatan berikutnya = KICK!' : `Sisa ${maxWarnings - newWarn}x lagi sebelum di-kick!`}_`;
+
+            // Reply dulu ke pesan pelanggar, baru hapus
             await hisoka.sendMessage(remoteJid, {
-                text:
-                    `⚠️ *「 Tag Status Terdeteksi 」*\n\n` +
-                    `@${senderNumber}, dilarang mentag grup lewat status!\n` +
-                    `📛 Peringatan ke: *${newWarn}/${maxWarnings}*`,
+                text: warnMsg,
                 contextInfo: { mentionedJid: [senderJid] }
-            });
+            }, { quoted: message });
+
+            // Hapus pesan tag status
+            try {
+                await hisoka.sendMessage(remoteJid, {
+                    delete: {
+                        remoteJid: remoteJid,
+                        fromMe: false,
+                        id: message.key.id,
+                        participant: message.key.participant
+                    }
+                });
+            } catch (delErr) {
+                console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
+            }
 
             console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber}\x1b[39m`);
         }

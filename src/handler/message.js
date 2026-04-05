@@ -4076,8 +4076,9 @@ text += `╰═════════════════╯`;
                         case 'statusgroup': {
                                 if (!m.isOwner) return m.reply('❌ Fitur ini hanya untuk owner!');
 
-                                let swgcContent = {};
-                                let swgcBuffer, swgcMime;
+                                const swgcCaption = query ? query.trim() : '';
+                                let swgcMeta = {};
+                                let swgcTempFile = null;
 
                                 if (m.isQuoted && m.quoted) {
                                         try {
@@ -4086,55 +4087,56 @@ text += `╰═════════════════╯`;
                                                         return m.reply('❌ Reply harus berupa image/video/audio.');
                                                 }
 
-                                                swgcBuffer = await m.quoted.downloadMedia();
-                                                if (!swgcBuffer) return m.reply('❌ Gagal mengambil media quoted.');
+                                                const swgcBuf = await m.quoted.downloadMedia();
+                                                if (!swgcBuf) return m.reply('❌ Gagal mengambil media quoted.');
 
-                                                swgcMime = m.quoted.content?.mimetype || 'application/octet-stream';
-                                                const swgcB64 = swgcBuffer.toString('base64');
+                                                const swgcMime = m.quoted.content?.mimetype || 'application/octet-stream';
+                                                const swgcExt = swgcMime.split('/')[1]?.split(';')[0]?.trim() || 'bin';
+                                                swgcTempFile = path.join(process.cwd(), 'tmp', `upswgc_${Date.now()}.${swgcExt}`);
+                                                fs.writeFileSync(swgcTempFile, swgcBuf);
 
                                                 if (/image/i.test(qType)) {
-                                                        swgcContent.type = 'image';
-                                                        swgcContent.data = swgcB64;
-                                                        swgcContent.mime = swgcMime;
-                                                        if (text) swgcContent.caption = text;
+                                                        swgcMeta = { type: 'image', file: swgcTempFile, mime: swgcMime };
+                                                        if (swgcCaption) swgcMeta.caption = swgcCaption;
                                                 } else if (/video/i.test(qType)) {
-                                                        swgcContent.type = 'video';
-                                                        swgcContent.data = swgcB64;
-                                                        swgcContent.mime = swgcMime;
-                                                        if (text) swgcContent.caption = text;
+                                                        swgcMeta = { type: 'video', file: swgcTempFile, mime: swgcMime };
+                                                        if (swgcCaption) swgcMeta.caption = swgcCaption;
                                                 } else if (/audio/i.test(qType)) {
-                                                        if (text) return m.reply('❌ Audio tidak boleh disertai caption.');
-                                                        swgcContent.type = 'audio';
-                                                        swgcContent.data = swgcB64;
-                                                        swgcContent.mime = swgcMime;
-                                                        swgcContent.ptt = false;
+                                                        if (swgcCaption) {
+                                                                fs.unlinkSync(swgcTempFile);
+                                                                return m.reply('❌ Audio tidak boleh disertai caption.');
+                                                        }
+                                                        swgcMeta = { type: 'audio', file: swgcTempFile, mime: swgcMime };
                                                 }
                                         } catch (e) {
+                                                if (swgcTempFile && fs.existsSync(swgcTempFile)) fs.unlinkSync(swgcTempFile);
                                                 return m.reply('❌ Media tidak valid atau gagal diproses: ' + (e.message || e));
                                         }
-                                } else if (text && text.trim()) {
-                                        swgcContent.type = 'text';
-                                        swgcContent.text = text.trim();
+                                } else if (swgcCaption) {
+                                        swgcMeta = { type: 'text', text: swgcCaption };
                                 } else {
                                         return m.reply(
                                                 '📌 *Cara Penggunaan .upswgc*\n\n' +
-                                                '• Reply foto/video/audio + *.upswgc [caption]*\n' +
-                                                '• *.upswgc teks pesan*\n\n' +
-                                                '_Kirim ke semua grup atau pilih grup tertentu_'
+                                                '• Reply foto/video/audio lalu ketik *.upswgc [caption]*\n' +
+                                                '• *.upswgc teks pesan* → kirim teks ke grup\n\n' +
+                                                '_Bot akan tampilkan pilihan grup tujuan_'
                                         );
                                 }
 
                                 const allGids = hisoka.groups.keys().filter(id => id.endsWith('@g.us'));
-                                if (!allGids.length) return m.reply('❌ Tidak ada grup dalam database bot.');
+                                if (!allGids.length) {
+                                        if (swgcTempFile && fs.existsSync(swgcTempFile)) fs.unlinkSync(swgcTempFile);
+                                        return m.reply('❌ Tidak ada grup dalam database bot.');
+                                }
 
-                                const swgcEncoded = encodeURIComponent(JSON.stringify(swgcContent));
-                                const prefix = m.prefix || '.';
+                                const swgcEncoded = encodeURIComponent(JSON.stringify(swgcMeta));
+                                const swgcPrefix = m.prefix || '.';
 
                                 const swgcRows = [
                                         {
                                                 title: '📢 Semua Grup',
                                                 description: `Kirim ke semua ${allGids.length} grup`,
-                                                id: `${prefix}sendstatus all ${swgcEncoded}`
+                                                id: `${swgcPrefix}sendstatus all ${swgcEncoded}`
                                         }
                                 ];
 
@@ -4143,9 +4145,9 @@ text += `╰═════════════════╯`;
                                                 const meta = hisoka.groups.read(gid);
                                                 if (!meta) continue;
                                                 swgcRows.push({
-                                                        title: meta.subject || gid,
+                                                        title: (meta.subject || gid).substring(0, 24),
                                                         description: gid,
-                                                        id: `${prefix}sendstatus ${gid} ${swgcEncoded}`
+                                                        id: `${swgcPrefix}sendstatus ${gid} ${swgcEncoded}`
                                                 });
                                         } catch (_) {}
                                 }
@@ -4190,15 +4192,15 @@ text += `╰═════════════════╯`;
                         case 'sendstatus': {
                                 if (!m.isOwner) return;
 
-                                const ssRaw = m.text.trim().split(/ +/);
-                                if (ssRaw.length < 3) return;
+                                const ssArgs = m.text.trim().split(/ +/);
+                                if (ssArgs.length < 3) return;
 
-                                const ssTarget = ssRaw[1];
-                                const ssEncoded = ssRaw.slice(2).join(' ');
+                                const ssTarget = ssArgs[1];
+                                const ssEncoded = ssArgs.slice(2).join(' ');
 
-                                let ssContent;
+                                let ssMeta;
                                 try {
-                                        ssContent = JSON.parse(decodeURIComponent(ssEncoded));
+                                        ssMeta = JSON.parse(decodeURIComponent(ssEncoded));
                                 } catch (e) {
                                         return m.reply('❌ Gagal memparse konten: ' + (e.message || e));
                                 }
@@ -4209,21 +4211,22 @@ text += `╰═════════════════╯`;
                                 if (!ssTargets.length) return m.reply('❌ Tidak ada grup tujuan.');
 
                                 let ssPayload;
-                                if (ssContent.type === 'text') {
-                                        ssPayload = { text: ssContent.text };
-                                } else if (ssContent.type === 'image') {
-                                        const imgBuf = Buffer.from(ssContent.data, 'base64');
-                                        ssPayload = { image: imgBuf, mimetype: ssContent.mime };
-                                        if (ssContent.caption) ssPayload.caption = ssContent.caption;
-                                } else if (ssContent.type === 'video') {
-                                        const vidBuf = Buffer.from(ssContent.data, 'base64');
-                                        ssPayload = { video: vidBuf, mimetype: ssContent.mime };
-                                        if (ssContent.caption) ssPayload.caption = ssContent.caption;
-                                } else if (ssContent.type === 'audio') {
-                                        const audBuf = Buffer.from(ssContent.data, 'base64');
-                                        ssPayload = { audio: audBuf, mimetype: ssContent.mime || 'audio/ogg; codecs=opus', ptt: false };
-                                } else {
-                                        return m.reply('❌ Tipe konten tidak dikenali.');
+                                try {
+                                        if (ssMeta.type === 'text') {
+                                                ssPayload = { text: ssMeta.text };
+                                        } else if (ssMeta.type === 'image') {
+                                                ssPayload = { image: { url: ssMeta.file }, mimetype: ssMeta.mime };
+                                                if (ssMeta.caption) ssPayload.caption = ssMeta.caption;
+                                        } else if (ssMeta.type === 'video') {
+                                                ssPayload = { video: { url: ssMeta.file }, mimetype: ssMeta.mime };
+                                                if (ssMeta.caption) ssPayload.caption = ssMeta.caption;
+                                        } else if (ssMeta.type === 'audio') {
+                                                ssPayload = { audio: { url: ssMeta.file }, mimetype: ssMeta.mime || 'audio/ogg; codecs=opus', ptt: false };
+                                        } else {
+                                                return m.reply('❌ Tipe konten tidak dikenali.');
+                                        }
+                                } catch (e) {
+                                        return m.reply('❌ Gagal memproses konten: ' + (e.message || e));
                                 }
 
                                 await m.reply(`⏳ Mengirim ke *${ssTargets.length}* grup, mohon tunggu...`);
@@ -4239,8 +4242,12 @@ text += `╰═════════════════╯`;
                                         }
                                 }
 
+                                if (ssMeta.file && fs.existsSync(ssMeta.file)) {
+                                        try { fs.unlinkSync(ssMeta.file); } catch (_) {}
+                                }
+
                                 await m.reply(
-                                        `✅ *Selesai Kirim Status ke Grup!*\n\n` +
+                                        `✅ *Selesai Kirim ke Grup!*\n\n` +
                                         `📊 *Hasil:*\n` +
                                         `• ✅ Berhasil : ${ssOk} grup\n` +
                                         `• ❌ Gagal    : ${ssFail} grup\n` +

@@ -22,6 +22,7 @@ Configuration-driven features defined in `config.json`:
 - **Auto Read Story**: Automatically reads WhatsApp statuses with optional reactions
 - **Auto Typing/Recording**: Simulates typing or recording indicators
 - **Anti-Delete**: Captures deleted messages and forwards them to bot's own number. Supports text, images, videos, audio, stickers, and documents. Can be toggled on/off with `.antidel on/off` command. Separate settings for private chat and group chat.
+- **Anti-Tag Semua Warga (AntiTagSW)**: Detects when a group member tags too many people at once (default ≥5). Automatically deletes the message, warns the user, and kicks them after reaching max warnings (default 3x). Per-group toggled via `.antitagsw on/off` command (admin only). Global toggle via `config.json` antiTagSW.enabled. Warning data stored in `data/antitagsw.json`.
 
 ### Download Features
 - **TikTok Downloader** (`.tt`, `.tiktok`, `.ttdl`): Downloads video and audio from TikTok. Supports multiple API versions (v1, v2, v3). Also supports TikTok slide/photo posts.

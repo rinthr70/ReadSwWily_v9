@@ -69,5 +69,10 @@
     "enabled": false,
     "apiKey": "",
     "apiUrl": ""
+  },
+  "antiTagSW": {
+    "enabled": true,
+    "minMentions": 5,
+    "maxWarnings": 3
   }
 }

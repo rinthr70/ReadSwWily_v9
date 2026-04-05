@@ -26,6 +26,7 @@ import { msToTime, loadConfig, saveConfig } from '../helper/utils.js';
 import { getUptimeFormatted, getBotStats } from '../db/botStats.js';
 import { startJadibot, startJadibotQR, stopJadibot, jadibotMap, pendingJadibotChoices, formatPairingCode, maskNumber } from '../helper/jadibot.js';
 import { hasViewOnceCache, getViewOnceCache } from '../helper/voCache.js';
+import { isAntiTagSWEnabled, toggleAntiTagSW, resetWarnings, getWarnings } from './antitagsw.js';
 // yg bawah pindah ke sini
 import { injectMessage } from '../helper/inject.js';
 import listenEvent from './event.js';
@@ -3988,6 +3989,81 @@ text += `╰═════════════════╯`;
                                         console.error('\x1b[31m[YTMP4] Error:\x1b[39m', error.message);
                                         await hisoka.sendMessage(m.from, { react: { text: '❌', key: m.key } });
                                         await m.reply(`❌ Gagal mengunduh video: ${error.message?.substring(0, 200)}`);
+                                }
+                                break;
+                        }
+
+                        case 'antitagsw': {
+                                if (!m.isGroup) return m.reply('❌ Fitur ini hanya bisa digunakan di grup!');
+                                if (!m.isAdmin && !m.isOwner) return m.reply('❌ Hanya admin grup atau owner bot yang bisa menggunakan perintah ini!');
+
+                                const arg = (m.text || '').trim().toLowerCase();
+
+                                if (arg === 'on') {
+                                        const config = loadConfig();
+                                        if (!config.antiTagSW?.enabled) {
+                                                return m.reply('❌ Fitur AntiTagSW dinonaktifkan secara global oleh owner bot.\nUbah *antiTagSW.enabled* di config.json menjadi *true* terlebih dahulu.');
+                                        }
+
+                                        toggleAntiTagSW(m.from, true);
+                                        await m.reply(
+                                                `╭───〔 *✅ ANTI-TAG SEMUA WARGA* 〕───╮\n` +
+                                                `│\n` +
+                                                `│ 🟢 *Fitur AntiTagSW AKTIF!*\n` +
+                                                `│\n` +
+                                                `│ ⚙️ Konfigurasi:\n` +
+                                                `│ • Min. tag: *${config.antiTagSW?.minMentions ?? 5} orang*\n` +
+                                                `│ • Maks. warning: *${config.antiTagSW?.maxWarnings ?? 3}x*\n` +
+                                                `│\n` +
+                                                `│ ℹ️ Anggota yang mentag ≥${config.antiTagSW?.minMentions ?? 5} orang\n` +
+                                                `│    akan diperingatkan & dikick!\n` +
+                                                `│\n` +
+                                                `╰────────────────────────────────────╯`
+                                        );
+                                        logCommand(m, hisoka, 'antitagsw on');
+                                } else if (arg === 'off') {
+                                        toggleAntiTagSW(m.from, false);
+                                        await m.reply(
+                                                `╭───〔 *❌ ANTI-TAG SEMUA WARGA* 〕───╮\n` +
+                                                `│\n` +
+                                                `│ 🔴 *Fitur AntiTagSW NONAKTIF!*\n` +
+                                                `│\n` +
+                                                `│ ℹ️ Semua warning di grup ini\n` +
+                                                `│    juga telah direset.\n` +
+                                                `│\n` +
+                                                `╰────────────────────────────────────╯`
+                                        );
+                                        logCommand(m, hisoka, 'antitagsw off');
+                                } else if (arg === 'reset') {
+                                        resetWarnings(m.from);
+                                        await m.reply('✅ Semua warning AntiTagSW di grup ini telah direset!');
+                                        logCommand(m, hisoka, 'antitagsw reset');
+                                } else {
+                                        const config = loadConfig();
+                                        const isEnabled = isAntiTagSWEnabled(m.from);
+                                        const globalEnabled = config.antiTagSW?.enabled ?? false;
+                                        const warnings = getWarnings(m.from);
+                                        const totalWarned = Object.keys(warnings).length;
+
+                                        let statusText =
+                                                `╭───〔 *ℹ️ ANTI-TAG SEMUA WARGA* 〕───╮\n` +
+                                                `│\n` +
+                                                `│ 🌐 Global   : ${globalEnabled ? '🟢 Aktif' : '🔴 Nonaktif'}\n` +
+                                                `│ 📌 Grup ini : ${isEnabled ? '🟢 Aktif' : '🔴 Nonaktif'}\n` +
+                                                `│\n` +
+                                                `│ ⚙️ Konfigurasi:\n` +
+                                                `│ • Min. tag     : *${config.antiTagSW?.minMentions ?? 5} orang*\n` +
+                                                `│ • Maks. warning: *${config.antiTagSW?.maxWarnings ?? 3}x*\n` +
+                                                `│ • Member warned: *${totalWarned} orang*\n` +
+                                                `│\n` +
+                                                `│ 📋 Cara penggunaan:\n` +
+                                                `│ • *.antitagsw on*  → Aktifkan\n` +
+                                                `│ • *.antitagsw off* → Nonaktifkan\n` +
+                                                `│ • *.antitagsw reset* → Reset warning\n` +
+                                                `│\n` +
+                                                `╰────────────────────────────────────╯`;
+
+                                        await m.reply(statusText);
                                 }
                                 break;
                         }

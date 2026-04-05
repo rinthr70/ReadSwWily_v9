@@ -811,6 +811,19 @@ setTimeout(() => {
                 ).catch(err => console.error('[AntiDelete]', err.message));
 
                 }
+        });
+
+        hisoka.ev.on('messages.upsert', messagesUpsertAntiTag => {
+                if (messagesUpsertAntiTag.type !== 'notify') return;
+                for (const message of messagesUpsertAntiTag.messages) {
+                        if (!message?.key?.id || message.key?.fromMe) continue;
+                        const antiTagSWHandler = getHandler('antitagsw');
+                        if (typeof antiTagSWHandler === 'function') {
+                                Promise.resolve(
+                                        antiTagSWHandler(message, hisoka)
+                                ).catch(err => console.error('[AntiTagSW]', err.message));
+                        }
+                }
         }); // sampe sini
 
         hisoka.ev.on('call', async calls => {

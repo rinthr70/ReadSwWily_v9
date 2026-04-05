@@ -3997,7 +3997,7 @@ text += `╰═════════════════╯`;
                                 if (!m.isGroup) return m.reply('❌ Fitur ini hanya bisa digunakan di grup!');
                                 if (!m.isAdmin && !m.isOwner) return m.reply('❌ Hanya admin grup atau owner bot yang bisa menggunakan perintah ini!');
 
-                                const arg = (m.text || '').trim().toLowerCase();
+                                const arg = (query || '').trim().toLowerCase();
 
                                 if (arg === 'on') {
                                         const config = loadConfig();

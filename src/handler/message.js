@@ -154,8 +154,10 @@ export default async function ({ message, type: messagesType }, hisoka) {
                 const query = m.query || quoted.query;
 
                 if (!m.key) return;
-                if (m.isBot) return;
-                if (messagesType === 'append') return;
+                // Blokir pesan auto-bot kecuali ada prefix command (owner pakai WA Web)
+                if (m.isBot && !m.prefix) return;
+                // Blokir pesan dari device lain (sinkronisasi) kecuali ada prefix command
+                if (messagesType === 'append' && !m.prefix) return;
 
                 // AutoSimi
                 if (m.isGroup && !m.text?.startsWith('.')) {

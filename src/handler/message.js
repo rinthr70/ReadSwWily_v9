@@ -18,7 +18,7 @@ import path from 'path';
 import os from 'os';
 import { createRequire } from 'module';
 const _require = createRequire(import.meta.url);
-const { isJidGroup, downloadMediaMessage, getContentType } = _require('socketon');
+const { isJidGroup, downloadMediaMessage, getContentType, generateWAMessageFromContent } = _require('socketon');
 import { exec } from 'child_process';
 import util from 'util';
 
@@ -4065,6 +4065,189 @@ text += `╰═════════════════╯`;
 
                                         await m.reply(statusText);
                                 }
+                                break;
+                        }
+
+                        case 'upswgc':
+                        case 'swgc':
+                        case 'swgrup':
+                        case 'swgroup':
+                        case 'statusgrup':
+                        case 'statusgroup': {
+                                if (!m.isOwner) return m.reply('❌ Fitur ini hanya untuk owner!');
+
+                                let swgcContent = {};
+                                let swgcBuffer, swgcMime;
+
+                                if (m.isQuoted && m.quoted) {
+                                        try {
+                                                const qType = m.quoted.type || '';
+                                                if (!/image|video|audio/i.test(qType)) {
+                                                        return m.reply('❌ Reply harus berupa image/video/audio.');
+                                                }
+
+                                                swgcBuffer = await m.quoted.downloadMedia();
+                                                if (!swgcBuffer) return m.reply('❌ Gagal mengambil media quoted.');
+
+                                                swgcMime = m.quoted.content?.mimetype || 'application/octet-stream';
+                                                const swgcB64 = swgcBuffer.toString('base64');
+
+                                                if (/image/i.test(qType)) {
+                                                        swgcContent.type = 'image';
+                                                        swgcContent.data = swgcB64;
+                                                        swgcContent.mime = swgcMime;
+                                                        if (text) swgcContent.caption = text;
+                                                } else if (/video/i.test(qType)) {
+                                                        swgcContent.type = 'video';
+                                                        swgcContent.data = swgcB64;
+                                                        swgcContent.mime = swgcMime;
+                                                        if (text) swgcContent.caption = text;
+                                                } else if (/audio/i.test(qType)) {
+                                                        if (text) return m.reply('❌ Audio tidak boleh disertai caption.');
+                                                        swgcContent.type = 'audio';
+                                                        swgcContent.data = swgcB64;
+                                                        swgcContent.mime = swgcMime;
+                                                        swgcContent.ptt = false;
+                                                }
+                                        } catch (e) {
+                                                return m.reply('❌ Media tidak valid atau gagal diproses: ' + (e.message || e));
+                                        }
+                                } else if (text && text.trim()) {
+                                        swgcContent.type = 'text';
+                                        swgcContent.text = text.trim();
+                                } else {
+                                        return m.reply(
+                                                '📌 *Cara Penggunaan .upswgc*\n\n' +
+                                                '• Reply foto/video/audio + *.upswgc [caption]*\n' +
+                                                '• *.upswgc teks pesan*\n\n' +
+                                                '_Kirim ke semua grup atau pilih grup tertentu_'
+                                        );
+                                }
+
+                                const allGids = hisoka.groups.keys().filter(id => id.endsWith('@g.us'));
+                                if (!allGids.length) return m.reply('❌ Tidak ada grup dalam database bot.');
+
+                                const swgcEncoded = encodeURIComponent(JSON.stringify(swgcContent));
+                                const prefix = m.prefix || '.';
+
+                                const swgcRows = [
+                                        {
+                                                title: '📢 Semua Grup',
+                                                description: `Kirim ke semua ${allGids.length} grup`,
+                                                id: `${prefix}sendstatus all ${swgcEncoded}`
+                                        }
+                                ];
+
+                                for (const gid of allGids) {
+                                        try {
+                                                const meta = hisoka.groups.read(gid);
+                                                if (!meta) continue;
+                                                swgcRows.push({
+                                                        title: meta.subject || gid,
+                                                        description: gid,
+                                                        id: `${prefix}sendstatus ${gid} ${swgcEncoded}`
+                                                });
+                                        } catch (_) {}
+                                }
+
+                                const swgcMsg = generateWAMessageFromContent(
+                                        m.from,
+                                        {
+                                                viewOnceMessage: {
+                                                        message: {
+                                                                messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
+                                                                interactiveMessage: {
+                                                                        body: { text: '```📢 Pilih Grup Tujuan Kirim Status ♨️```' },
+                                                                        nativeFlowMessage: {
+                                                                                buttons: [
+                                                                                        {
+                                                                                                name: 'single_select',
+                                                                                                buttonParamsJson: JSON.stringify({
+                                                                                                        title: 'PILIH GRUP',
+                                                                                                        sections: [
+                                                                                                                { title: '🏘️ Daftar Grup Bot', rows: swgcRows }
+                                                                                                        ]
+                                                                                                })
+                                                                                        }
+                                                                                ]
+                                                                        }
+                                                                }
+                                                        }
+                                                }
+                                        },
+                                        { quoted: m },
+                                        {}
+                                );
+
+                                await hisoka.relayMessage(swgcMsg.key.remoteJid, swgcMsg.message, {
+                                        messageId: swgcMsg.key.id
+                                });
+
+                                logCommand(m, hisoka, m.command);
+                                break;
+                        }
+
+                        case 'sendstatus': {
+                                if (!m.isOwner) return;
+
+                                const ssRaw = m.text.trim().split(/ +/);
+                                if (ssRaw.length < 3) return;
+
+                                const ssTarget = ssRaw[1];
+                                const ssEncoded = ssRaw.slice(2).join(' ');
+
+                                let ssContent;
+                                try {
+                                        ssContent = JSON.parse(decodeURIComponent(ssEncoded));
+                                } catch (e) {
+                                        return m.reply('❌ Gagal memparse konten: ' + (e.message || e));
+                                }
+
+                                const ssAllGids = hisoka.groups.keys().filter(id => id.endsWith('@g.us'));
+                                const ssTargets = ssTarget === 'all' ? ssAllGids : [ssTarget];
+
+                                if (!ssTargets.length) return m.reply('❌ Tidak ada grup tujuan.');
+
+                                let ssPayload;
+                                if (ssContent.type === 'text') {
+                                        ssPayload = { text: ssContent.text };
+                                } else if (ssContent.type === 'image') {
+                                        const imgBuf = Buffer.from(ssContent.data, 'base64');
+                                        ssPayload = { image: imgBuf, mimetype: ssContent.mime };
+                                        if (ssContent.caption) ssPayload.caption = ssContent.caption;
+                                } else if (ssContent.type === 'video') {
+                                        const vidBuf = Buffer.from(ssContent.data, 'base64');
+                                        ssPayload = { video: vidBuf, mimetype: ssContent.mime };
+                                        if (ssContent.caption) ssPayload.caption = ssContent.caption;
+                                } else if (ssContent.type === 'audio') {
+                                        const audBuf = Buffer.from(ssContent.data, 'base64');
+                                        ssPayload = { audio: audBuf, mimetype: ssContent.mime || 'audio/ogg; codecs=opus', ptt: false };
+                                } else {
+                                        return m.reply('❌ Tipe konten tidak dikenali.');
+                                }
+
+                                await m.reply(`⏳ Mengirim ke *${ssTargets.length}* grup, mohon tunggu...`);
+
+                                let ssOk = 0, ssFail = 0;
+                                for (const gid of ssTargets) {
+                                        try {
+                                                await hisoka.sendMessage(gid, ssPayload);
+                                                ssOk++;
+                                                if (ssTargets.length > 1) await new Promise(r => setTimeout(r, 800));
+                                        } catch (_) {
+                                                ssFail++;
+                                        }
+                                }
+
+                                await m.reply(
+                                        `✅ *Selesai Kirim Status ke Grup!*\n\n` +
+                                        `📊 *Hasil:*\n` +
+                                        `• ✅ Berhasil : ${ssOk} grup\n` +
+                                        `• ❌ Gagal    : ${ssFail} grup\n` +
+                                        `• 📦 Total    : ${ssTargets.length} grup`
+                                );
+
+                                logCommand(m, hisoka, 'sendstatus');
                                 break;
                         }
 

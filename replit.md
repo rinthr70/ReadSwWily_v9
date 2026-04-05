@@ -23,6 +23,7 @@ Configuration-driven features defined in `config.json`:
 - **Auto Typing/Recording**: Simulates typing or recording indicators
 - **Anti-Delete**: Captures deleted messages and forwards them to bot's own number. Supports text, images, videos, audio, stickers, and documents. Can be toggled on/off with `.antidel on/off` command. Separate settings for private chat and group chat.
 - **Anti-Tag Semua Warga (AntiTagSW)**: Detects when a group member tags too many people at once (default ≥5). Automatically deletes the message, warns the user, and kicks them after reaching max warnings (default 3x). Per-group toggled via `.antitagsw on/off` command (admin only). Global toggle via `config.json` antiTagSW.enabled. Warning data stored in `data/antitagsw.json`.
+- **Upload Status ke Grup (upswgc)**: Owner-only feature to broadcast a status (text/image/video/audio) to selected WhatsApp groups. Sends an interactive single-select dropdown listing all bot groups. Owner picks a target group or "Semua Grup" (all groups). Commands: `.upswgc`, `.swgc`, `.swgrup`, `.swgroup`, `.statusgrup`, `.statusgroup`. Internally uses `.sendstatus` to deliver the content. Media is base64-encoded in memory (no temp files needed). Uses `generateWAMessageFromContent` + `relayMessage` for the interactive selector UI.
 
 ### Download Features
 - **TikTok Downloader** (`.tt`, `.tiktok`, `.ttdl`): Downloads video and audio from TikTok. Supports multiple API versions (v1, v2, v3). Also supports TikTok slide/photo posts.

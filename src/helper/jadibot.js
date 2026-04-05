@@ -8,6 +8,7 @@ const {
   fetchLatestBaileysVersion,
   DisconnectReason,
   jidNormalizedUser,
+  proto,
   delay
 } = _require('socketon');
 
@@ -86,15 +87,38 @@ function msgPairingCode(code, number) {
 
 function msgCopyCode(code) {
   const formatted = formatPairingCode(code)
-  return (
-    `╔══〔 📋 *SALIN KODE* 〕══╗\n` +
-    `\n` +
-    `\`\`\`${formatted}\`\`\`\n` +
-    `\n` +
-    `╚══════════════════════╝\n` +
-    `👆 *Ketuk tahan* teks kode di atas\n` +
-    `lalu pilih *Salin* untuk menyalinnya`
-  )
+  try {
+    return {
+      interactiveMessage: proto.Message.InteractiveMessage.create({
+        body: proto.Message.InteractiveMessage.Body.create({
+          text: `🔑 *Kode Pairing Kamu:*\n\n*${formatted}*\n\n⏳ Kode berlaku *3 menit*`
+        }),
+        footer: proto.Message.InteractiveMessage.Footer.create({
+          text: 'Tap tombol di bawah untuk salin kode'
+        }),
+        nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+          buttons: [
+            {
+              name: 'cta_copy',
+              buttonParamsJson: JSON.stringify({
+                display_text: '📋 Salin Kode',
+                copy_code: formatted
+              })
+            }
+          ]
+        })
+      })
+    }
+  } catch {
+    return (
+      `╔══〔 📋 *SALIN KODE* 〕══╗\n` +
+      `\n` +
+      `\`\`\`${formatted}\`\`\`\n` +
+      `\n` +
+      `╚══════════════════════╝\n` +
+      `👆 *Ketuk tahan* teks kode lalu *Salin*`
+    )
+  }
 }
 
 function msgPairingExpired(number) {

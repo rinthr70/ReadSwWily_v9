@@ -174,8 +174,41 @@ export default async function handleAntiTagSW(message, hisoka) {
                 areJidsSameUser(p.lid, senderJid)
             );
             if (senderParticipant?.admin) {
-                console.log(`\x1b[33m[AntiTagSW] Admin tag SW: ${senderNumber} — reaksi saja\x1b[39m`);
+                console.log(`\x1b[33m[AntiTagSW] Admin tag SW: ${senderNumber} — balas + reaksi\x1b[39m`);
                 try {
+                    const [aContentLabel, aContentEmoji] = detectStatusContentType(message);
+                    const aNow = new Date();
+                    const aTimeStr = aNow.toLocaleTimeString('id-ID', {
+                        timeZone: 'Asia/Jakarta',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+                    const aDateStr = aNow.toLocaleDateString('id-ID', {
+                        timeZone: 'Asia/Jakarta',
+                        day: '2-digit', month: '2-digit', year: 'numeric'
+                    });
+
+                    const adminMsg =
+                        `╭─────────────────────────────╮\n` +
+                        `│   👑 *TAG STATUS ADMIN* 👑   │\n` +
+                        `╰─────────────────────────────╯\n` +
+                        `\n` +
+                        `👤 *Admin:* @${senderNumber}\n` +
+                        `📅 *Waktu:* ${aTimeStr} • ${aDateStr}\n` +
+                        `${aContentEmoji} *Tipe Konten:* ${aContentLabel}\n` +
+                        `\n` +
+                        `┌─────────────────────────────\n` +
+                        `│ ✅ Admin diizinkan mentag\n` +
+                        `│    grup lewat STATUS WA.\n` +
+                        `│ 🔔 Anggota telah diberitahu!\n` +
+                        `└─────────────────────────────\n` +
+                        `\n` +
+                        `_Terimakasih telah aktif mengelola grup!_ 🙏`;
+
+                    await hisoka.sendMessage(remoteJid, {
+                        text: adminMsg,
+                        contextInfo: { mentionedJid: [senderJid] }
+                    }, { quoted: message });
+
                     await hisoka.sendMessage(remoteJid, {
                         react: { text: '👑', key: message.key }
                     });

@@ -8,7 +8,6 @@ const {
   fetchLatestBaileysVersion,
   DisconnectReason,
   jidNormalizedUser,
-  proto,
   delay
 } = _require('socketon');
 
@@ -87,37 +86,20 @@ function msgPairingCode(code, number) {
 
 function msgCopyCode(code) {
   const formatted = formatPairingCode(code)
-  try {
-    return {
-      interactiveMessage: proto.Message.InteractiveMessage.create({
-        body: proto.Message.InteractiveMessage.Body.create({
-          text: `🔑 *Kode Pairing Kamu:*\n\n*${formatted}*\n\n⏳ Kode berlaku *3 menit*`
-        }),
-        footer: proto.Message.InteractiveMessage.Footer.create({
-          text: 'Tap tombol di bawah untuk salin kode'
-        }),
-        nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-          buttons: [
-            {
-              name: 'cta_copy',
-              buttonParamsJson: JSON.stringify({
-                display_text: '📋 Salin Kode',
-                copy_code: formatted
-              })
-            }
-          ]
-        })
-      })
+  return {
+    interactiveMessage: {
+      title: `🔑 *Kode Pairing:*\n\n*${formatted}*\n\n⏳ Berlaku *3 menit*`,
+      footer: 'Tap tombol di bawah untuk salin kode',
+      buttons: [
+        {
+          name: 'cta_copy',
+          buttonParamsJson: JSON.stringify({
+            display_text: '📋 Salin Kode',
+            copy_code: formatted
+          })
+        }
+      ]
     }
-  } catch {
-    return (
-      `╔══〔 📋 *SALIN KODE* 〕══╗\n` +
-      `\n` +
-      `\`\`\`${formatted}\`\`\`\n` +
-      `\n` +
-      `╚══════════════════════╝\n` +
-      `👆 *Ketuk tahan* teks kode lalu *Salin*`
-    )
   }
 }
 
@@ -272,7 +254,12 @@ async function startJadibot(number, sendReply, mainBotNumber) {
             const code = await sock.requestPairingCode(number)
             await sendReply(msgPairingCode(code, number))
             await delay(800)
-            await sendReply(msgCopyCode(code))
+            try {
+              await sendReply(msgCopyCode(code))
+            } catch {
+              const formatted = formatPairingCode(code)
+              await sendReply(`📋 *Salin Kode:*\n\n\`\`\`${formatted}\`\`\`\n\n👆 Ketuk tahan teks kode lalu *Salin*`)
+            }
             break
           } catch (err) {
             retries--

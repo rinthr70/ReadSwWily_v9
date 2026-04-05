@@ -24,7 +24,7 @@ import util from 'util';
 
 import { msToTime, loadConfig, saveConfig } from '../helper/utils.js';
 import { getUptimeFormatted, getBotStats } from '../db/botStats.js';
-import { startJadibot, startJadibotQR, stopJadibot, jadibotMap, pendingJadibotChoices } from '../helper/jadibot.js';
+import { startJadibot, startJadibotQR, stopJadibot, jadibotMap, pendingJadibotChoices, formatPairingCode, maskNumber } from '../helper/jadibot.js';
 import { hasViewOnceCache, getViewOnceCache } from '../helper/voCache.js';
 // yg bawah pindah ke sini
 import { injectMessage } from '../helper/inject.js';
@@ -3393,6 +3393,79 @@ text += `╰═════════════════╯`;
                                                 try {
                                                         await hisoka.sendMessage(m.from, { edit: key, text })
                                                 } catch {}
+                                        },
+                                        async (code, num) => {
+                                                const fmt = formatPairingCode(code)
+                                                const masked = maskNumber(num)
+
+                                                const captionText =
+                                                        `╔══════════════════════╗\n` +
+                                                        `║   🤖  *J A D I B O T*   ║\n` +
+                                                        `╚══════════════════════╝\n\n` +
+                                                        `📱 *Nomor:* ${masked}\n` +
+                                                        `🔑 *Kode:*  \`${fmt}\`\n\n` +
+                                                        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                                                        `📋 *Cara Memasukkan Kode:*\n` +
+                                                        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                                                        `1️⃣ Buka *WhatsApp* di HP kamu\n` +
+                                                        `2️⃣ Ketuk ⋮ → *Perangkat Tertaut*\n` +
+                                                        `3️⃣ Ketuk *Tautkan Perangkat*\n` +
+                                                        `4️⃣ Pilih *Tautkan dengan nomor telepon*\n` +
+                                                        `5️⃣ Masukkan kode pairing di atas\n\n` +
+                                                        `⏳ Kode berlaku *3 menit*\n` +
+                                                        `⚠️ Gagal? Ketik *.jadibot* lagi`
+
+                                                const footerText = `📲 Tap tombol untuk salin kode · +${num}`
+
+                                                let ppUrl = null
+                                                try {
+                                                        ppUrl = await hisoka.profilePictureUrl(`${num}@s.whatsapp.net`, 'image')
+                                                } catch {}
+
+                                                let sentInfo = null
+
+                                                if (ppUrl) {
+                                                        try {
+                                                                sentInfo = await hisoka.sendMessage(m.from, {
+                                                                        image: { url: ppUrl },
+                                                                        caption: captionText,
+                                                                        footer: footerText,
+                                                                        buttons: [{
+                                                                                buttonId: fmt,
+                                                                                buttonText: { displayText: `📋 Salin Kode: ${fmt}` }
+                                                                        }],
+                                                                        headerType: 4
+                                                                }, { quoted: m })
+                                                        } catch {
+                                                                ppUrl = null
+                                                        }
+                                                }
+
+                                                if (!ppUrl) {
+                                                        sentInfo = await m.reply({
+                                                                interactiveMessage: {
+                                                                        title: captionText,
+                                                                        footer: footerText,
+                                                                        buttons: [{
+                                                                                name: 'cta_copy',
+                                                                                buttonParamsJson: JSON.stringify({
+                                                                                        display_text: '📋 Salin Kode Pairing',
+                                                                                        copy_code: fmt
+                                                                                })
+                                                                        }]
+                                                                }
+                                                        })
+                                                }
+
+                                                if (sentInfo?.key) {
+                                                        try {
+                                                                await hisoka.sendMessage(m.from, {
+                                                                        react: { text: '🔑', key: sentInfo.key }
+                                                                })
+                                                        } catch {}
+                                                }
+
+                                                return sentInfo
                                         }
                                 );
                         }

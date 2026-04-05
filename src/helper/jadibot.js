@@ -217,7 +217,7 @@ function msgLoggedOut(number, remainingList) {
 }
 
 /* ================= START JADIBOT ================= */
-async function startJadibot(number, sendReply, mainBotNumber, editMsg = null) {
+async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, sendPairingMsg = null) {
   number = number.replace(/[^0-9]/g, '')
   const sessionDir = path.join(process.cwd(), 'jadibot', number)
 
@@ -269,14 +269,19 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null) {
         while (retries > 0) {
           try {
             const code = await sock.requestPairingCode(number)
-            try {
-              const sentInfo = await sendReply(msgCopyCode(code, number))
+            if (sendPairingMsg) {
+              const sentInfo = await sendPairingMsg(code, number)
               if (sentInfo?.key) pairingMsgKey = sentInfo.key
-            } catch {
-              const formatted = formatPairingCode(code)
-              const sentInfo = await sendReply(msgPairingCode(code, number))
-              if (sentInfo?.key) pairingMsgKey = sentInfo.key
-              await sendReply(`📋 *Salin Kode:*\n\n\`\`\`${formatted}\`\`\`\n\n👆 Ketuk tahan teks kode lalu *Salin*`)
+            } else {
+              try {
+                const sentInfo = await sendReply(msgCopyCode(code, number))
+                if (sentInfo?.key) pairingMsgKey = sentInfo.key
+              } catch {
+                const formatted = formatPairingCode(code)
+                const sentInfo = await sendReply(msgPairingCode(code, number))
+                if (sentInfo?.key) pairingMsgKey = sentInfo.key
+                await sendReply(`📋 *Salin Kode:*\n\n\`\`\`${formatted}\`\`\`\n\n👆 Ketuk tahan teks kode lalu *Salin*`)
+              }
             }
             break
           } catch (err) {
@@ -620,5 +625,7 @@ export {
   startJadibotQR,
   stopJadibot,
   jadibotMap,
-  pendingJadibotChoices
+  pendingJadibotChoices,
+  formatPairingCode,
+  maskNumber
 }

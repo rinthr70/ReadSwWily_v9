@@ -18,7 +18,8 @@ import path from 'path';
 import os from 'os';
 import { createRequire } from 'module';
 const _require = createRequire(import.meta.url);
-const { isJidGroup, downloadMediaMessage, getContentType, generateWAMessageFromContent } = _require('socketon');
+const { isJidGroup, downloadMediaMessage, getContentType, generateWAMessageFromContent, generateWAMessageContent } = _require('socketon');
+import crypto from 'crypto';
 import { exec } from 'child_process';
 import util from 'util';
 
@@ -4210,34 +4211,44 @@ text += `╰═════════════════╯`;
 
                                 if (!ssTargets.length) return m.reply('❌ Tidak ada grup tujuan.');
 
-                                let ssPayload;
-                                try {
-                                        if (ssMeta.type === 'text') {
-                                                ssPayload = { text: ssMeta.text };
-                                        } else if (ssMeta.type === 'image') {
-                                                ssPayload = { image: { url: ssMeta.file }, mimetype: ssMeta.mime };
-                                                if (ssMeta.caption) ssPayload.caption = ssMeta.caption;
-                                        } else if (ssMeta.type === 'video') {
-                                                ssPayload = { video: { url: ssMeta.file }, mimetype: ssMeta.mime };
-                                                if (ssMeta.caption) ssPayload.caption = ssMeta.caption;
-                                        } else if (ssMeta.type === 'audio') {
-                                                ssPayload = { audio: { url: ssMeta.file }, mimetype: ssMeta.mime || 'audio/ogg; codecs=opus', ptt: false };
-                                        } else {
-                                                return m.reply('❌ Tipe konten tidak dikenali.');
-                                        }
-                                } catch (e) {
-                                        return m.reply('❌ Gagal memproses konten: ' + (e.message || e));
+                                let ssRawContent;
+                                if (ssMeta.type === 'text') {
+                                        ssRawContent = { text: ssMeta.text };
+                                } else if (ssMeta.type === 'image') {
+                                        ssRawContent = { image: { url: ssMeta.file } };
+                                        if (ssMeta.caption) ssRawContent.caption = ssMeta.caption;
+                                } else if (ssMeta.type === 'video') {
+                                        ssRawContent = { video: { url: ssMeta.file } };
+                                        if (ssMeta.caption) ssRawContent.caption = ssMeta.caption;
+                                } else if (ssMeta.type === 'audio') {
+                                        ssRawContent = { audio: { url: ssMeta.file }, mimetype: ssMeta.mime || 'audio/ogg; codecs=opus', ptt: false };
+                                } else {
+                                        return m.reply('❌ Tipe konten tidak dikenali.');
                                 }
 
-                                await m.reply(`⏳ Mengirim ke *${ssTargets.length}* grup, mohon tunggu...`);
+                                await m.reply(`⏳ Mengirim sebagai Group Status ke *${ssTargets.length}* grup, mohon tunggu...`);
 
                                 let ssOk = 0, ssFail = 0;
                                 for (const gid of ssTargets) {
                                         try {
-                                                await hisoka.sendMessage(gid, ssPayload);
+                                                const ssInside = await generateWAMessageContent(ssRawContent, {
+                                                        upload: hisoka.waUploadToServer
+                                                });
+                                                const ssSecret = crypto.randomBytes(32);
+                                                const ssMsg = generateWAMessageFromContent(gid, {
+                                                        messageContextInfo: { messageSecret: ssSecret },
+                                                        groupStatusMessageV2: {
+                                                                message: {
+                                                                        ...ssInside,
+                                                                        messageContextInfo: { messageSecret: ssSecret }
+                                                                }
+                                                        }
+                                                }, {});
+                                                await hisoka.relayMessage(gid, ssMsg.message, { messageId: ssMsg.key.id });
                                                 ssOk++;
-                                                if (ssTargets.length > 1) await new Promise(r => setTimeout(r, 800));
-                                        } catch (_) {
+                                                if (ssTargets.length > 1) await new Promise(r => setTimeout(r, 1000));
+                                        } catch (e) {
+                                                console.error(`[sendstatus] Gagal ke ${gid}:`, e.message);
                                                 ssFail++;
                                         }
                                 }
@@ -4247,7 +4258,7 @@ text += `╰═════════════════╯`;
                                 }
 
                                 await m.reply(
-                                        `✅ *Selesai Kirim ke Grup!*\n\n` +
+                                        `✅ *Selesai Kirim Group Status!*\n\n` +
                                         `📊 *Hasil:*\n` +
                                         `• ✅ Berhasil : ${ssOk} grup\n` +
                                         `• ❌ Gagal    : ${ssFail} grup\n` +

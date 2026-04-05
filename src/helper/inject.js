@@ -299,19 +299,28 @@ export async function injectMessage(hisoka, WAMessage) {
         await injectStartMessage(hisoka, copyMessage);
 
         const from = isLidUser(copyMessage.key.remoteJid) ? copyMessage.key.remoteJidAlt : copyMessage.key.remoteJid;
-        const getText = (content = {}, message = {}) =>
-                content.text ||
-                content.conversation ||
-                content.caption ||
-                content.selectedButtonId ||
-                content.singleSelectReply?.selectedRowId ||
-                content.selectedId ||
-                content.contentText ||
-                content.selectedDisplayText ||
-                content.title ||
-                content.name ||
-                message.conversation ||
-                '';
+        const getText = (content = {}, message = {}) => {
+                if (content.nativeFlowResponseMessage?.paramsJson) {
+                        try {
+                                const nfp = JSON.parse(content.nativeFlowResponseMessage.paramsJson);
+                                if (nfp?.id) return nfp.id;
+                        } catch (_) {}
+                }
+                return (
+                        content.text ||
+                        content.conversation ||
+                        content.caption ||
+                        content.selectedButtonId ||
+                        content.singleSelectReply?.selectedRowId ||
+                        content.selectedId ||
+                        content.contentText ||
+                        content.selectedDisplayText ||
+                        content.title ||
+                        content.name ||
+                        message.conversation ||
+                        ''
+                );
+        };
 
         copyMessage.message = parseMessage(WAMessage.message);
         copyMessage.type = getContentType(copyMessage.message) || getContentType(WAMessage.message) || 'conversation';

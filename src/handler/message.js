@@ -3404,6 +3404,11 @@ text += `╰═════════════════╯`;
                                                 try {
                                                         sentInfo = await m.reply({
                                                                 interactiveMessage: {
+                                                                        contextInfo: {
+                                                                                stanzaId: m.key.id,
+                                                                                participant: m.sender,
+                                                                                quotedMessage: m.message
+                                                                        },
                                                                         title:
                                                                                 `╔══════════════════════╗\n` +
                                                                                 `║   🤖  *J A D I B O T*   ║\n` +

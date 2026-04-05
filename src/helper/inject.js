@@ -21,13 +21,13 @@ const {
         getContentType,
         isJidGroup,
         isJidStatusBroadcast,
-        isPnUser,
         isLidUser,
         jidDecode,
         jidNormalizedUser,
         downloadMediaMessage,
         generateMessageIDV2,
 } = _require('socketon');
+import { isPnUser, safeGetPNForLID } from './socketCompat.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -239,14 +239,14 @@ export function injectClient(hisoka, cacheMsg, contacts, groups, settings) {
 
                 if (isLidUser(key.remoteJid)) {
                         return jidNormalizedUser(
-                                key.remoteJidAlt || (await hisoka.signalRepository.lidMapping.getPNForLID(key.remoteJid)) || key.remoteJid
+                                key.remoteJidAlt || (await safeGetPNForLID(hisoka, key.remoteJid)) || key.remoteJid
                         );
                 }
 
                 if (isJidGroup(key.remoteJid)) {
                         const jid = jidNormalizedUser(
                                 key.participantAlt ||
-                                        (await hisoka.signalRepository.lidMapping.getPNForLID(key.participant)) ||
+                                        (await safeGetPNForLID(hisoka, key.participant)) ||
                                         key.participant
                         );
 
@@ -273,7 +273,7 @@ export function injectClient(hisoka, cacheMsg, contacts, groups, settings) {
                 if (isLidUser(key.participant)) {
                         return jidNormalizedUser(
                                 key.participantAlt ||
-                                        (await hisoka.signalRepository.lidMapping.getPNForLID(key.participant)) ||
+                                        (await safeGetPNForLID(hisoka, key.participant)) ||
                                         key.remoteJid
                         );
                 }

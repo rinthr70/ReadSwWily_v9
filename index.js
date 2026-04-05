@@ -43,6 +43,7 @@ import { MemoryMonitor } from './src/helper/memoryMonitor.js';
 import { getPhoneRegion, formatPhoneWithRegion } from './src/helper/phoneRegion.js';
 import { ensureTmpDir, startAutoCleaner, cleanStaleSessionFiles } from './src/helper/cleaner.js'; // ini baru
 import { startJadibot, jadibotMap } from './src/helper/jadibot.js';
+import { safeGetPNForLID } from './src/helper/socketCompat.js';
 import { saveViewOnceCache, cleanOldViewOnceCache, hasViewOnceCache } from './src/helper/voCache.js';
 // ini baru - yg bawah pindah ke sini
 import { setupCrashGuard } from './src/helper/crashGuard.js';
@@ -833,7 +834,7 @@ setTimeout(() => {
                                         let contactData = null;
                                         
                                         if (isLidUser(call.from)) {
-                                                const pnJid = await hisoka.signalRepository.lidMapping.getPNForLID(call.from);
+                                                const pnJid = await safeGetPNForLID(hisoka, call.from);
                                                 if (pnJid) {
                                                         callerJid = jidNormalizedUser(pnJid);
                                                 } else {

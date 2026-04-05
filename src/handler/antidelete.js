@@ -11,7 +11,8 @@ import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 const _require = createRequire(import.meta.url);
-const { jidNormalizedUser, jidDecode, isJidGroup, isPnUser, getContentType, downloadMediaMessage } = _require('socketon');
+const { jidNormalizedUser, jidDecode, isJidGroup, getContentType, downloadMediaMessage } = _require('socketon');
+import { isPnUser } from '../helper/socketCompat.js';
 import { getTmpPath } from '../helper/cleaner.js';
 
 function loadConfig() {

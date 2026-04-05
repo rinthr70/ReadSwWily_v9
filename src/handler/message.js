@@ -296,61 +296,6 @@ CONTOH NYAMBUNG:
                     if (!isAllowedForJadibot(m, hisoka)) return;
                 }
 
-                /* ===== PENDING JADIBOT CHOICE (reply detection) ===== */
-                if (
-                  hisoka?.isMainBot === true &&
-                  m.isOwner &&
-                  m.isQuoted &&
-                  m.quoted?.key?.id &&
-                  pendingJadibotChoices.has(m.quoted.key.id)
-                ) {
-                  const choiceData = pendingJadibotChoices.get(m.quoted.key.id)
-                  const input = m.text?.trim()
-
-                  if (input === '1' || /pairing/i.test(input)) {
-                    pendingJadibotChoices.delete(m.quoted.key.id)
-                    await m.reply(
-                      `╔══════════════════════╗\n` +
-                      `║   🤖  *J A D I B O T*  ║\n` +
-                      `╚══════════════════════╝\n\n` +
-                      `⏳ Sedang menghubungkan *+${choiceData.number}*...\n` +
-                      `Kode pairing akan segera dikirim.`
-                    )
-                    await startJadibot(
-                      choiceData.number,
-                      async (msg) => m.reply(msg),
-                      choiceData.mainNum,
-                      async (key, text) => {
-                        try {
-                          await hisoka.sendMessage(m.from, { edit: key, text })
-                        } catch {}
-                      }
-                    )
-                  } else if (input === '2' || /qr/i.test(input)) {
-                    pendingJadibotChoices.delete(m.quoted.key.id)
-                    await m.reply(
-                      `╔══════════════════════╗\n` +
-                      `║   🤖  *J A D I B O T*  ║\n` +
-                      `╚══════════════════════╝\n\n` +
-                      `⏳ Sedang menghubungkan *+${choiceData.number}*...\n` +
-                      `QR Code akan segera dikirim.`
-                    )
-                    await startJadibotQR(
-                      choiceData.number,
-                      (text) => m.reply(text),
-                      (buffer, caption) => hisoka.sendMessage(m.from, { image: buffer, caption }),
-                      choiceData.mainNum
-                    )
-                  } else {
-                    await m.reply(
-                      `❌ Pilihan tidak valid.\n\n` +
-                      `Balas pesan ini dengan:\n` +
-                      `• *1* untuk Pairing Code\n` +
-                      `• *2* untuk QR Code`
-                    )
-                  }
-                  return
-                }
 
                 switch (m.command) {
 
@@ -3432,27 +3377,24 @@ text += `╰═════════════════╯`;
                                         || hisoka.user?.id?.split(':')[0]
                                         || '';
 
-                                const choiceMsg = await m.reply(
+                                await m.reply(
                                         `╔══════════════════════╗\n` +
                                         `║   🤖  *J A D I B O T*  ║\n` +
                                         `╚══════════════════════╝\n\n` +
-                                        `📱 *Nomor:* +${number}\n\n` +
-                                        `Pilih metode koneksi:\n\n` +
-                                        `1️⃣ *Pairing Code* — Masukkan kode di WhatsApp\n` +
-                                        `2️⃣ *QR Code* — Scan QR dengan WhatsApp\n\n` +
-                                        `📩 *Reply pesan ini* dengan angka *1* atau *2*\n` +
-                                        `⏳ Pilihan kedaluwarsa dalam 2 menit`
+                                        `⏳ Sedang menghubungkan *+${number}*...\n` +
+                                        `Kode pairing akan segera dikirim.`
                                 );
 
-                                if (choiceMsg?.key?.id) {
-                                        pendingJadibotChoices.set(choiceMsg.key.id, {
-                                                number,
-                                                mainNum
-                                        });
-                                        setTimeout(() => {
-                                                pendingJadibotChoices.delete(choiceMsg.key.id);
-                                        }, 2 * 60 * 1000);
-                                }
+                                await startJadibot(
+                                        number,
+                                        async (msg) => m.reply(msg),
+                                        mainNum,
+                                        async (key, text) => {
+                                                try {
+                                                        await hisoka.sendMessage(m.from, { edit: key, text })
+                                                } catch {}
+                                        }
+                                );
                         }
                                 break;
 

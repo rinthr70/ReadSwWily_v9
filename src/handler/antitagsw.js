@@ -20,6 +20,45 @@ const DATA_PATH = path.join(process.cwd(), 'data', 'antitagsw.json');
 // agar anti-delete tidak mengirim notifikasi "PESAN DIHAPUS"
 if (!global.__antiTagSWDeletedIds) global.__antiTagSWDeletedIds = new Set();
 
+// Mapping tipe konten status → label + emoji
+const CONTENT_TYPE_MAP = {
+    imageMessage:         ['Gambar', '🖼️'],
+    videoMessage:         ['Video', '🎥'],
+    audioMessage:         ['Audio', '🎵'],
+    ptvMessage:           ['Video Pesan', '📹'],
+    stickerMessage:       ['Stiker', '🎨'],
+    documentMessage:      ['Dokumen', '📄'],
+    documentWithCaptionMessage: ['Dokumen', '📄'],
+    conversation:         ['Teks', '💬'],
+    extendedTextMessage:  ['Teks', '💬'],
+    reactionMessage:      ['Reaksi', '🔥'],
+    pollCreationMessage:  ['Polling', '📊'],
+    pollCreationMessageV2: ['Polling', '📊'],
+    pollCreationMessageV3: ['Polling', '📊'],
+};
+
+function detectStatusContentType(message) {
+    try {
+        const msg = message?.message || {};
+
+        // Cek inner message dari groupStatusMentionMessage / groupStatusMessageV2
+        const inner = msg?.groupStatusMentionMessage?.message
+            || msg?.groupStatusMessageV2?.message
+            || msg?.groupMentionedMessage?.message
+            || msg;
+
+        // Cari tipe pertama yang ada
+        for (const [key, val] of Object.entries(CONTENT_TYPE_MAP)) {
+            if (inner[key]) return val;
+        }
+
+        // Fallback: cek pakai getContentType di level dalam
+        const innerType = getContentType(inner);
+        if (innerType && CONTENT_TYPE_MAP[innerType]) return CONTENT_TYPE_MAP[innerType];
+    } catch (_) {}
+    return ['Status', '📲'];
+}
+
 // Tipe pesan yang terdeteksi sebagai "tag grup lewat status"
 const ANTITAG_MSG_TYPES = [
     'groupStatusMentionMessage',
@@ -169,6 +208,9 @@ export default async function handleAntiTagSW(message, hisoka) {
             day: '2-digit', month: '2-digit', year: 'numeric'
         });
 
+        // Deteksi tipe konten status secara realtime
+        const [contentLabel, contentEmoji] = detectStatusContentType(message);
+
         if (newWarn >= maxWarnings) {
             // Reset warning
             delete data.warnings[remoteJid][senderJid];
@@ -181,6 +223,7 @@ export default async function handleAntiTagSW(message, hisoka) {
                 `\n` +
                 `👤 *Pelanggar:* @${senderNumber}\n` +
                 `📅 *Waktu:* ${timeStr} • ${dateStr}\n` +
+                `${contentEmoji} *Tipe Konten:* ${contentLabel}\n` +
                 `\n` +
                 `┌─────────────────────────────\n` +
                 `│ ⚠️  *Pelanggaran Terdeteksi*\n` +
@@ -239,6 +282,7 @@ export default async function handleAntiTagSW(message, hisoka) {
                 `\n` +
                 `👤 *Pelanggar:* @${senderNumber}\n` +
                 `📅 *Waktu:* ${timeStr} • ${dateStr}\n` +
+                `${contentEmoji} *Tipe Konten:* ${contentLabel}\n` +
                 `\n` +
                 `┌─────────────────────────────\n` +
                 `│ 🚫 Dilarang mentag grup\n` +

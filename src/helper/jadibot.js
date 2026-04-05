@@ -84,25 +84,32 @@ function msgPairingCode(code, number) {
   )
 }
 
-function msgCopyCode(code) {
+function msgCopyCode(code, number) {
   const formatted = formatPairingCode(code)
+  const masked = maskNumber(number)
   return {
     interactiveMessage: {
       title:
-        `📋 *Cara Memasukkan Kode:*\n\n` +
-        `1️⃣ Buka WhatsApp di HP kamu\n` +
-        `2️⃣ Ketuk ⋮ (titik tiga) → *Perangkat Tertaut*\n` +
+        `╔══════════════════════╗\n` +
+        `║   🤖  *J A D I B O T*   ║\n` +
+        `╚══════════════════════╝\n\n` +
+        `📱 *Nomor:* ${masked}\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `📋 *Cara Memasukkan Kode:*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `1️⃣ Buka *WhatsApp* di HP kamu\n` +
+        `2️⃣ Ketuk ⋮ → *Perangkat Tertaut*\n` +
         `3️⃣ Ketuk *Tautkan Perangkat*\n` +
         `4️⃣ Pilih *Tautkan dengan nomor telepon*\n` +
-        `5️⃣ Masukkan kode yang tertera di atas\n\n` +
-        `⏳ Berlaku *3 menit*\n` +
-        `⚠️ Jika gagal, ketik *.jadibot* ulang`,
-      footer: 'Tap tombol di bawah untuk salin kode',
+        `5️⃣ Masukkan kode pairing di atas\n\n` +
+        `⏳ Kode berlaku *3 menit*\n` +
+        `⚠️ Gagal? Ketik *.jadibot* lagi`,
+      footer: `📲 Tap tombol untuk salin kode · +${number}`,
       buttons: [
         {
           name: 'cta_copy',
           buttonParamsJson: JSON.stringify({
-            display_text: '📋 Salin Kode',
+            display_text: '📋 Salin Kode Pairing',
             copy_code: formatted
           })
         }
@@ -266,7 +273,7 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null) {
             if (sentInfo?.key) pairingMsgKey = sentInfo.key
             await delay(800)
             try {
-              await sendReply(msgCopyCode(code))
+              await sendReply(msgCopyCode(code, number))
             } catch {
               const formatted = formatPairingCode(code)
               await sendReply(`📋 *Salin Kode:*\n\n\`\`\`${formatted}\`\`\`\n\n👆 Ketuk tahan teks kode lalu *Salin*`)

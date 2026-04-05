@@ -108,16 +108,18 @@ export function injectClient(hisoka, cacheMsg, contacts, groups, settings) {
                         return data;
                 }
 
-                const disappearing = await hisoka.fetchDisappearingDuration(jid).catch(() => null);
-                if (disappearing.length && disappearing[0].disappearing_mode) {
-                        const data = {
-                                ephemeralDuration: disappearing[0].disappearing_mode.duration,
-                                ephemeralSettingTimestamp: +new Date(disappearing[0].disappearing_mode.setAt) / 1000,
-                        };
+                if (typeof hisoka.fetchDisappearingDuration === 'function') {
+                        const disappearing = await hisoka.fetchDisappearingDuration(jid).catch(() => null);
+                        if (disappearing && disappearing.length && disappearing[0].disappearing_mode) {
+                                const data = {
+                                        ephemeralDuration: disappearing[0].disappearing_mode.duration,
+                                        ephemeralSettingTimestamp: +new Date(disappearing[0].disappearing_mode.setAt) / 1000,
+                                };
 
-                        hisoka.contacts.write(jid, { ...contact, ...data });
+                                hisoka.contacts.write(jid, { ...contact, ...data });
 
-                        return data;
+                                return data;
+                        }
                 }
 
                 return { ephemeralDuration: 0 };

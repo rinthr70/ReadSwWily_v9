@@ -174,7 +174,12 @@ export default async function handleAntiTagSW(message, hisoka) {
                 areJidsSameUser(p.lid, senderJid)
             );
             if (senderParticipant?.admin) {
-                console.log(`\x1b[33m[AntiTagSW] Skip admin: ${senderNumber}\x1b[39m`);
+                console.log(`\x1b[33m[AntiTagSW] Admin tag SW: ${senderNumber} — reaksi saja\x1b[39m`);
+                try {
+                    await hisoka.sendMessage(remoteJid, {
+                        react: { text: '👑', key: message.key }
+                    });
+                } catch (_) {}
                 return;
             }
 

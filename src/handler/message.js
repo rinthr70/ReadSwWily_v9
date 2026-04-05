@@ -3397,55 +3397,30 @@ text += `╰═════════════════╯`;
                                         async (code, num) => {
                                                 const fmt = formatPairingCode(code)
                                                 const masked = maskNumber(num)
-
-                                                const captionText =
-                                                        `╔══════════════════════╗\n` +
-                                                        `║   🤖  *J A D I B O T*   ║\n` +
-                                                        `╚══════════════════════╝\n\n` +
-                                                        `📱 *Nomor:* ${masked}\n` +
-                                                        `🔑 *Kode:*  \`${fmt}\`\n\n` +
-                                                        `━━━━━━━━━━━━━━━━━━━━━━\n` +
-                                                        `📋 *Cara Memasukkan Kode:*\n` +
-                                                        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                                                        `1️⃣ Buka *WhatsApp* di HP kamu\n` +
-                                                        `2️⃣ Ketuk ⋮ → *Perangkat Tertaut*\n` +
-                                                        `3️⃣ Ketuk *Tautkan Perangkat*\n` +
-                                                        `4️⃣ Pilih *Tautkan dengan nomor telepon*\n` +
-                                                        `5️⃣ Masukkan kode pairing di atas\n\n` +
-                                                        `⏳ Kode berlaku *3 menit*\n` +
-                                                        `⚠️ Gagal? Ketik *.jadibot* lagi`
-
                                                 const footerText = `📲 Tap tombol untuk salin kode · +${num}`
 
-                                                let ppUrl = null
-                                                try {
-                                                        ppUrl = await hisoka.profilePictureUrl(`${num}@s.whatsapp.net`, 'image')
-                                                } catch {}
-
+                                                // Reply (quote) pesan pengguna langsung dengan tombol salin
                                                 let sentInfo = null
-
-                                                if (ppUrl) {
-                                                        try {
-                                                                // Kirim foto profil + info sebagai gambar
-                                                                await hisoka.sendMessage(m.from, {
-                                                                        image: { url: ppUrl },
-                                                                        caption: captionText
-                                                                }, { quoted: m })
-                                                        } catch {
-                                                                ppUrl = null
-                                                        }
-                                                }
-
-                                                // Kirim tombol salin kode (cta_copy) — selalu dikirim agar bisa salin otomatis
                                                 try {
                                                         sentInfo = await m.reply({
                                                                 interactiveMessage: {
                                                                         title:
-                                                                                `🔑 *Kode Pairing:*\n\n` +
+                                                                                `╔══════════════════════╗\n` +
+                                                                                `║   🤖  *J A D I B O T*   ║\n` +
+                                                                                `╚══════════════════════╝\n\n` +
+                                                                                `📱 *Nomor:* ${masked}\n\n` +
+                                                                                `🔑 *Kode Pairing:*\n` +
                                                                                 `┌─────────────────┐\n` +
                                                                                 `│   *${fmt}*   │\n` +
                                                                                 `└─────────────────┘\n\n` +
-                                                                                `⏳ Berlaku *3 menit*`,
+                                                                                `📋 *Cara Memasukkan Kode:*\n\n` +
+                                                                                `1️⃣ Buka *WhatsApp* di HP kamu\n` +
+                                                                                `2️⃣ Ketuk ⋮ → *Perangkat Tertaut*\n` +
+                                                                                `3️⃣ Ketuk *Tautkan Perangkat*\n` +
+                                                                                `4️⃣ Pilih *Tautkan dengan nomor telepon*\n` +
+                                                                                `5️⃣ Masukkan kode pairing di atas\n\n` +
+                                                                                `⏳ Kode berlaku *3 menit*\n` +
+                                                                                `⚠️ Gagal? Ketik *.jadibot* lagi`,
                                                                         footer: footerText,
                                                                         buttons: [{
                                                                                 name: 'cta_copy',
@@ -3458,7 +3433,20 @@ text += `╰═════════════════╯`;
                                                         })
                                                 } catch {
                                                         sentInfo = await m.reply(
-                                                                `🔑 *Kode Pairing:*\n\n\`\`\`${fmt}\`\`\`\n\n👆 Ketuk tahan teks kode lalu *Salin*`
+                                                                `╔══════════════════════╗\n` +
+                                                                `║   🤖  *J A D I B O T*   ║\n` +
+                                                                `╚══════════════════════╝\n\n` +
+                                                                `📱 *Nomor:* ${masked}\n\n` +
+                                                                `🔑 *Kode Pairing:*\n` +
+                                                                `┌─────────────────┐\n` +
+                                                                `│   *${fmt}*   │\n` +
+                                                                `└─────────────────┘\n\n` +
+                                                                `📋 Cara masukkan kode:\n` +
+                                                                `1️⃣ Buka WhatsApp → ⋮ → Perangkat Tertaut\n` +
+                                                                `2️⃣ Tautkan Perangkat → Tautkan dengan nomor\n` +
+                                                                `3️⃣ Masukkan kode di atas\n\n` +
+                                                                `⏳ Berlaku *3 menit* · Gagal? ketik *.jadibot* lagi\n\n` +
+                                                                `\`\`\`${fmt}\`\`\``
                                                         )
                                                 }
 

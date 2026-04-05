@@ -16,6 +16,10 @@ const { isJidGroup, jidNormalizedUser, areJidsSameUser, jidDecode, getContentTyp
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'antitagsw.json');
 
+// Set global untuk menandai pesan yang dihapus oleh antitagsw
+// agar anti-delete tidak mengirim notifikasi "PESAN DIHAPUS"
+if (!global.__antiTagSWDeletedIds) global.__antiTagSWDeletedIds = new Set();
+
 // Tipe pesan yang terdeteksi sebagai "tag grup lewat status"
 const ANTITAG_MSG_TYPES = [
     'groupStatusMentionMessage',
@@ -194,6 +198,10 @@ export default async function handleAntiTagSW(message, hisoka) {
                 contextInfo: { mentionedJid: [senderJid] }
             }, { quoted: message });
 
+            // Tandai ID agar anti-delete tidak notif "PESAN DIHAPUS"
+            global.__antiTagSWDeletedIds.add(message.key.id);
+            setTimeout(() => global.__antiTagSWDeletedIds.delete(message.key.id), 10000);
+
             // Hapus pesan tag status
             try {
                 await hisoka.sendMessage(remoteJid, {
@@ -247,6 +255,10 @@ export default async function handleAntiTagSW(message, hisoka) {
                 text: warnMsg,
                 contextInfo: { mentionedJid: [senderJid] }
             }, { quoted: message });
+
+            // Tandai ID agar anti-delete tidak notif "PESAN DIHAPUS"
+            global.__antiTagSWDeletedIds.add(message.key.id);
+            setTimeout(() => global.__antiTagSWDeletedIds.delete(message.key.id), 10000);
 
             // Hapus pesan tag status
             try {

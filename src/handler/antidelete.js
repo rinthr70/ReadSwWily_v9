@@ -215,6 +215,9 @@ export default async function handleDeletedMessage(update, hisoka) {
                 
                 const cachedMsg = hisoka.cacheMsg.get(key.id);
                 if (!cachedMsg) return;
+
+                // Skip pesan yang dihapus oleh antitagsw (sudah ada notif sendiri)
+                if (global.__antiTagSWDeletedIds && global.__antiTagSWDeletedIds.has(key.id)) return;
                 
                 const from = key.remoteJid;
                 const isGroup = isJidGroup(from);

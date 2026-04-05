@@ -4012,11 +4012,10 @@ text += `╰═════════════════╯`;
                                                 `│ 🟢 *Fitur AntiTagSW AKTIF!*\n` +
                                                 `│\n` +
                                                 `│ ⚙️ Konfigurasi:\n` +
-                                                `│ • Min. tag: *${config.antiTagSW?.minMentions ?? 5} orang*\n` +
                                                 `│ • Maks. warning: *${config.antiTagSW?.maxWarnings ?? 3}x*\n` +
                                                 `│\n` +
-                                                `│ ℹ️ Anggota yang mentag ≥${config.antiTagSW?.minMentions ?? 5} orang\n` +
-                                                `│    akan diperingatkan & dikick!\n` +
+                                                `│ ℹ️ Anggota yang mentag grup lewat\n` +
+                                                `│    STATUS akan diperingatkan & dikick!\n` +
                                                 `│\n` +
                                                 `╰────────────────────────────────────╯`
                                         );
@@ -4052,9 +4051,10 @@ text += `╰═════════════════╯`;
                                                 `│ 📌 Grup ini : ${isEnabled ? '🟢 Aktif' : '🔴 Nonaktif'}\n` +
                                                 `│\n` +
                                                 `│ ⚙️ Konfigurasi:\n` +
-                                                `│ • Min. tag     : *${config.antiTagSW?.minMentions ?? 5} orang*\n` +
                                                 `│ • Maks. warning: *${config.antiTagSW?.maxWarnings ?? 3}x*\n` +
                                                 `│ • Member warned: *${totalWarned} orang*\n` +
+                                                `│\n` +
+                                                `│ ℹ️ Mendeteksi tag grup via STATUS\n` +
                                                 `│\n` +
                                                 `│ 📋 Cara penggunaan:\n` +
                                                 `│ • *.antitagsw on*  → Aktifkan\n` +

@@ -72,7 +72,6 @@
   },
   "antiTagSW": {
     "enabled": true,
-    "minMentions": 5,
     "maxWarnings": 3
   }
 }

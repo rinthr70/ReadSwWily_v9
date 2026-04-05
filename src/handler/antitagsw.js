@@ -1,7 +1,8 @@
 /**
  * ═══════════════════════════════════════════════════════════════
  *  Anti-Tag Semua Warga (AntiTagSW) Handler
- *  Fitur untuk mencegah anggota grup mentag semua orang sekaligus
+ *  Fitur untuk mencegah anggota mentag grup lewat status WhatsApp
+ *  Referensi: github.com/hitlabmodv2/MD-FURINA
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -14,6 +15,13 @@ const _require = createRequire(import.meta.url);
 const { isJidGroup, jidNormalizedUser, areJidsSameUser, jidDecode, getContentType } = _require('socketon');
 
 const DATA_PATH = path.join(process.cwd(), 'data', 'antitagsw.json');
+
+// Tipe pesan yang terdeteksi sebagai "tag grup lewat status"
+const ANTITAG_MSG_TYPES = [
+    'groupStatusMentionMessage',
+    'groupStatusMessageV2',
+    'groupMentionedMessage',
+];
 
 function loadConfig() {
     try {
@@ -42,41 +50,8 @@ function saveData(data) {
     }
 }
 
-function getOwners() {
-    try {
-        const config = loadConfig();
-        return (config.owners || []).map(o => o + '@s.whatsapp.net');
-    } catch (_) {}
-    return [];
-}
-
-function getMentionsFromMessage(message) {
-    if (!message) return [];
-    const mentions = [];
-
-    const contentType = getContentType(message);
-    if (!contentType) return [];
-
-    const content = message[contentType];
-    if (!content) return [];
-
-    const contextInfo = content?.contextInfo;
-    if (contextInfo?.mentionedJid && Array.isArray(contextInfo.mentionedJid)) {
-        mentions.push(...contextInfo.mentionedJid);
-    }
-
-    if (contextInfo?.groupMentions && Array.isArray(contextInfo.groupMentions)) {
-        contextInfo.groupMentions.forEach(g => {
-            if (g.groupJid) mentions.push(g.groupJid);
-        });
-    }
-
-    return [...new Set(mentions.filter(Boolean))];
-}
-
 function getSenderJid(message, hisoka) {
-    const remoteJid = message.key?.remoteJid;
-    let sender = message.key?.participant || message.participant || message.key?.remoteJid;
+    let sender = message.key?.participant || message.participant;
 
     if (!sender) return null;
 
@@ -94,56 +69,60 @@ function getSenderJid(message, hisoka) {
     return jidNormalizedUser(sender);
 }
 
+function isOwnerJid(senderJid, senderNumber, config) {
+    const owners = (config.owners || []);
+    const ownerJids = owners.map(o => o + '@s.whatsapp.net');
+    return ownerJids.some(o => areJidsSameUser(o, senderJid)) ||
+        owners.some(o => senderNumber === o);
+}
+
 export default async function handleAntiTagSW(message, hisoka) {
     try {
         if (!message?.key?.remoteJid) return;
+        if (!message.message) return;
 
         const remoteJid = message.key.remoteJid;
 
         if (!isJidGroup(remoteJid)) return;
-
         if (message.key?.fromMe) return;
 
-        if (!message.message) return;
+        // Cek tipe pesan — hanya proses tag status
+        const msgType = getContentType(message.message);
+        if (!msgType) return;
 
-        const msgMentions = getMentionsFromMessage(message.message);
-        if (!msgMentions.length) return;
+        const isTagStatus = ANTITAG_MSG_TYPES.includes(msgType);
+        if (!isTagStatus) return;
 
+        // Cek config global
         const config = loadConfig();
         const antiTagSWConfig = config.antiTagSW || {};
-
         if (!antiTagSWConfig.enabled) return;
 
-        const minMentions = antiTagSWConfig.minMentions ?? 5;
-        if (msgMentions.length < minMentions) return;
-
+        // Cek apakah grup ini mengaktifkan antitagsw
         const data = loadData();
-
         if (!data.groups.includes(remoteJid)) return;
 
         const senderJid = getSenderJid(message, hisoka);
         if (!senderJid) return;
 
-        const senderNumber = jidDecode(senderJid)?.user || '';
+        const senderNumber = jidDecode(senderJid)?.user || senderJid.split('@')[0] || '';
 
-        const owners = getOwners();
-        const isOwner = owners.some(o => areJidsSameUser(o, senderJid)) ||
-            (config.owners || []).some(o => senderNumber === o);
-        if (isOwner) return;
+        // Skip owner
+        if (isOwnerJid(senderJid, senderNumber, config)) return;
 
+        // Skip bot sendiri
         const botJid = jidNormalizedUser(hisoka.user?.id || '');
         if (areJidsSameUser(senderJid, botJid)) return;
 
+        // Cek apakah sender admin & bot adalah admin
         let groupMeta = null;
         try {
             groupMeta = hisoka.groups?.read(remoteJid);
-            if (!groupMeta || !groupMeta.participants) {
+            if (!groupMeta?.participants?.length) {
                 groupMeta = await hisoka.groupMetadata(remoteJid);
             }
         } catch (_) {
-            try {
-                groupMeta = await hisoka.groupMetadata(remoteJid);
-            } catch (_2) {}
+            try { groupMeta = await hisoka.groupMetadata(remoteJid); } catch (_2) {}
         }
 
         if (groupMeta?.participants) {
@@ -151,7 +130,10 @@ export default async function handleAntiTagSW(message, hisoka) {
                 areJidsSameUser(p.phoneNumber || p.id, senderJid) ||
                 areJidsSameUser(p.lid, senderJid)
             );
-            if (senderParticipant?.admin) return;
+            if (senderParticipant?.admin) {
+                console.log(`\x1b[33m[AntiTagSW] Skip admin: ${senderNumber}\x1b[39m`);
+                return;
+            }
 
             const botParticipant = groupMeta.participants.find(p =>
                 areJidsSameUser(p.phoneNumber || p.id, botJid)
@@ -162,73 +144,64 @@ export default async function handleAntiTagSW(message, hisoka) {
             }
         }
 
+        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | Grup: ${remoteJid}\x1b[39m`);
+
+        // Hapus pesan tag status — gunakan format exact seperti referensi
         try {
-            await hisoka.sendMessage(remoteJid, { delete: message.key });
+            await hisoka.sendMessage(remoteJid, {
+                delete: {
+                    remoteJid: remoteJid,
+                    fromMe: false,
+                    id: message.key.id,
+                    participant: message.key.participant
+                }
+            });
         } catch (delErr) {
             console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
         }
 
+        // Update & simpan warning
         if (!data.warnings[remoteJid]) data.warnings[remoteJid] = {};
-        const prevWarn = data.warnings[remoteJid][senderJid] || 0;
-        const newWarn = prevWarn + 1;
-        data.warnings[remoteJid][senderJid] = newWarn;
+        if (!data.warnings[remoteJid][senderJid]) data.warnings[remoteJid][senderJid] = 0;
+        data.warnings[remoteJid][senderJid] += 1;
+
+        const newWarn = data.warnings[remoteJid][senderJid];
+        const maxWarnings = antiTagSWConfig.maxWarnings ?? 3;
         saveData(data);
 
-        const maxWarnings = antiTagSWConfig.maxWarnings ?? 3;
-        const senderName = hisoka.getName?.(senderJid) || senderNumber;
-
         if (newWarn >= maxWarnings) {
-            data.warnings[remoteJid][senderJid] = 0;
+            // Reset warning lalu kick
+            delete data.warnings[remoteJid][senderJid];
             saveData(data);
 
-            const kickMsg =
-                `╭───〔 *⛔ ANTI-TAG SEMUA WARGA* 〕───╮\n` +
-                `│\n` +
-                `│ 🚨 *Pelanggaran Berat!*\n` +
-                `│ @${senderNumber} telah di-kick!\n` +
-                `│\n` +
-                `│ 📛 *Alasan:* Mentag terlalu banyak\n` +
-                `│    anggota (${msgMentions.length} orang)\n` +
-                `│\n` +
-                `│ ⚠️ Peringatan: ${maxWarnings}/${maxWarnings}\n` +
-                `│\n` +
-                `╰─────────────────────────────────╯`;
-
             await hisoka.sendMessage(remoteJid, {
-                text: kickMsg,
-                mentions: [senderJid]
+                text:
+                    `🚨 *「 Tag Status Terdeteksi 」*\n\n` +
+                    `@${senderNumber} telah mentag grup lewat status sebanyak *${maxWarnings}x*.\n` +
+                    `💥 *Dikeluarkan dari grup!*`,
+                contextInfo: { mentionedJid: [senderJid] }
             });
 
             try {
                 await hisoka.groupParticipantsUpdate(remoteJid, [senderJid], 'remove');
-                console.log(`\x1b[31m[AntiTagSW] Kicked ${senderNumber} dari ${remoteJid}\x1b[39m`);
+                console.log(`\x1b[31m[AntiTagSW] ✓ Kicked ${senderNumber} dari ${remoteJid}\x1b[39m`);
             } catch (kickErr) {
                 console.error('\x1b[31m[AntiTagSW] Gagal kick:\x1b[39m', kickErr.message);
                 await hisoka.sendMessage(remoteJid, {
                     text: `❌ Gagal kick @${senderNumber}. Pastikan bot adalah admin grup.`,
-                    mentions: [senderJid]
+                    contextInfo: { mentionedJid: [senderJid] }
                 });
             }
         } else {
-            const warnMsg =
-                `╭───〔 *⚠️ ANTI-TAG SEMUA WARGA* 〕───╮\n` +
-                `│\n` +
-                `│ 🚫 *Peringatan ${newWarn}/${maxWarnings}*\n` +
-                `│ @${senderNumber}\n` +
-                `│\n` +
-                `│ ❌ Kamu mentag *${msgMentions.length} orang*\n` +
-                `│    sekaligus, pesan dihapus!\n` +
-                `│\n` +
-                `│ ⚠️ Jika sampai ${maxWarnings}x akan di-kick!\n` +
-                `│\n` +
-                `╰─────────────────────────────────╯`;
-
             await hisoka.sendMessage(remoteJid, {
-                text: warnMsg,
-                mentions: [senderJid]
+                text:
+                    `⚠️ *「 Tag Status Terdeteksi 」*\n\n` +
+                    `@${senderNumber}, dilarang mentag grup lewat status!\n` +
+                    `📛 Peringatan ke: *${newWarn}/${maxWarnings}*`,
+                contextInfo: { mentionedJid: [senderJid] }
             });
 
-            console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber} di ${remoteJid}\x1b[39m`);
+            console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber}\x1b[39m`);
         }
     } catch (err) {
         console.error('\x1b[31m[AntiTagSW] Error:\x1b[39m', err.message);

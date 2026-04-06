@@ -566,6 +566,8 @@ ${readMore}
 │ ∘ .antidel sendto self/chat/both
 │ ∘ .anticall
 │ ∘ .anticallvid
+│ ∘ .autocleaner on/off
+│ ∘ .sessioncleaner on/off
 │ ∘ .telegram
 ╰───────────────╯
 

@@ -555,6 +555,14 @@ ${readMore}
 │ ∘ .rvo
 │ ∘ .s
 │ ∘ .toimg
+│ ∘ .listgroup
+╰───────────────╯
+
+╭───〔 *Status & Anti-Tag* 〕
+│ ∘ .upswgc [caption]
+│ ∘ .antitagsw on/off
+│ ∘ .antitagsw reset
+│ ∘ .antitagsw status
 ╰───────────────╯
 
 ╭───〔 *Channel React* 〕

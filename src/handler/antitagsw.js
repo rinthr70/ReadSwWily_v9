@@ -171,8 +171,9 @@ export default async function handleAntiTagSW(message, hisoka) {
 
         function findParticipant(participants, targetNumber) {
             return participants?.find(p => {
-                const pNum = (p.phoneNumber || p.id || '').split('@')[0];
-                return pNum === targetNumber || (p.lid && p.lid.split('@')[0] === targetNumber);
+                const rawJid = p.jid || p.phoneNumber || p.id || '';
+                const pNum = rawJid.split('@')[0].split(':')[0];
+                return pNum === targetNumber;
             });
         }
 

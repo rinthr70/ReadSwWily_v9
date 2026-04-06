@@ -172,7 +172,8 @@ function saveBotAdminStatus(hisoka, allGroups) {
     const data = loadBotAdminData();
     for (const g of allGroups) {
       const participant = (g.participants || []).find(p => {
-        const pNum = (p.phoneNumber || p.id || '').split('@')[0];
+        const rawJid = p.jid || p.phoneNumber || p.id || '';
+        const pNum = rawJid.split('@')[0].split(':')[0];
         return pNum === botNumber;
       });
       data[g.id] = !!participant?.admin;
@@ -815,7 +816,8 @@ setTimeout(() => {
                                 });
                                 // Cek apakah bot sendiri yang di-promote/demote
                                 const botAffected = participants.some(p => {
-                                        const pNum = (p.phoneNumber || p.id || '').split('@')[0];
+                                        const rawJid = p.jid || p.phoneNumber || p.id || '';
+                                        const pNum = rawJid.split('@')[0].split(':')[0];
                                         return pNum === botNumber;
                                 });
                                 if (botAffected) {

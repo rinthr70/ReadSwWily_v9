@@ -8,7 +8,9 @@ const {
   fetchLatestBaileysVersion,
   DisconnectReason,
   jidNormalizedUser,
-  delay
+  delay,
+  makeCacheableSignalKeyStore,
+  Browsers
 } = _require('socketon');
 
 import fs from 'fs'
@@ -231,9 +233,14 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
 
   const sock = makeWASocket({
     version,
-    auth: state,
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, silentLogger)
+    },
     logger: silentLogger,
-    printQRInTerminal: false
+    printQRInTerminal: false,
+    browser: Browsers('Chrome'),
+    keepAliveIntervalMs: 30000
   })
 
   sock.isMainBot = false
@@ -274,6 +281,7 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
 
       // Kirim kode pairing setelah koneksi stabil (dengan retry)
       setTimeout(async () => {
+        await delay(1000) // tunggu socket stabil
         let retries = 3
         while (retries > 0) {
           if (aborted) break
@@ -468,9 +476,14 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
 
   const sock = makeWASocket({
     version,
-    auth: state,
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, silentLogger)
+    },
     logger: silentLogger,
-    printQRInTerminal: false
+    printQRInTerminal: false,
+    browser: Browsers('Chrome'),
+    keepAliveIntervalMs: 30000
   })
 
   sock.isMainBot = false

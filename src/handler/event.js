@@ -379,6 +379,89 @@ ${m.text ? `<b>Caption :</b>\n\n${m.text}` : ''}`.trim();
                                 }
                         }
                 }
+                // Group Linked Status (upswgc / groupStatusMessageV2)
+                if (!m.key?.fromMe && isJidGroup(m.key?.remoteJid) && m.message?.groupStatusMessageV2) {
+                        const config = loadConfig();
+                        const storyConfig = config.autoReadStory || {};
+
+                        if (storyConfig.enabled === false) return;
+
+                        const reactStatus = getStatusEmojis();
+                        let usedReaction = reactStatus.length ? getRandomEmoji('status') : '❌';
+
+                        const useRandomDelay = storyConfig.randomDelay !== false;
+                        const delayMinMs = storyConfig.delayMinMs || 1000;
+                        const delayMaxMs = storyConfig.delayMaxMs || 20000;
+                        const fixedDelayMs = storyConfig.fixedDelayMs || 3000;
+
+                        const delayMs = useRandomDelay
+                                ? Math.floor(Math.random() * (delayMaxMs - delayMinMs)) + delayMinMs
+                                : fixedDelayMs;
+
+                        const senderJid = m.sender || m.participant || m.key?.participant;
+                        const hasSender = !!senderJid;
+                        const shouldReact = storyConfig.autoReaction !== false && reactStatus.length && hasSender;
+
+                        await new Promise(resolve => setTimeout(resolve, delayMs));
+
+                        const reactPromise = shouldReact ? hisoka.sendMessage(
+                                m.key.remoteJid,
+                                { react: { key: m.key, text: usedReaction } }
+                        ).catch((err) => {
+                                console.error('\x1b[31m[GroupStatus Reaction Error]\x1b[39m', err?.message || String(err) || 'Unknown');
+                                usedReaction = '❌ Gagal';
+                        }) : Promise.resolve();
+
+                        await reactPromise;
+
+                        const from = jidNormalizedUser(senderJid || m.key.remoteJid);
+                        const storyNumber = jidDecode(from)?.user || '';
+                        const storyName = m.pushName || hisoka.getName(from, true) || storyNumber;
+                        const groupName = hisoka.getName(m.key.remoteJid) || m.key.remoteJid;
+
+                        const nowGs = Date.now();
+                        const botIdGs = hisoka.user.id.split(':')[0];
+                        const debounceKeyGs = `gs:${botIdGs}:${from}`;
+                        const lastLogGs = storyDebounce.get(debounceKeyGs);
+
+                        if (!lastLogGs) {
+                                storyDebounce.set(debounceKeyGs, { time: nowGs, count: 1 });
+
+                                const delaySeconds = (delayMs / 1000).toFixed(1);
+                                const innerMsg = m.message.groupStatusMessageV2?.message;
+                                const innerType = innerMsg ? Object.keys(innerMsg).find(k => k !== 'messageContextInfo') : null;
+                                const mediaType = getMediaTypeEmoji(innerType);
+                                const greeting = getGreeting();
+
+                                const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                                const jakartaDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+                                const dayName = dayNames[jakartaDate.getDay()];
+                                const dateStr = `${jakartaDate.getDate()} ${monthNames[jakartaDate.getMonth()]} ${jakartaDate.getFullYear()}`;
+                                const timeStr = jakartaDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '.');
+
+                                const mode = shouldReact ? 'Read+Reaction ✓' : 'Read Only 👁️';
+
+                                logStoryView({
+                                        botId: hisoka.isMainBot ? null : (hisoka.user.name || maskNumber(botIdGs)),
+                                        mediaType,
+                                        greeting,
+                                        dayName,
+                                        date: dateStr,
+                                        time: timeStr,
+                                        name: storyName,
+                                        number: maskNumber(storyNumber),
+                                        success: 'Grup SW ✓',
+                                        reaction: shouldReact ? usedReaction : 'Off ❌',
+                                        delaySeconds,
+                                        mode: `${mode} [📢 ${groupName}]`,
+                                });
+
+                                setTimeout(() => {
+                                        storyDebounce.delete(debounceKeyGs);
+                                }, 3000);
+                        }
+                }
         } catch (e) {
                 console.error(`\x1b[31mError in event handler:\x1b[39m\n`, e);
         }

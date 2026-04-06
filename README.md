@@ -139,13 +139,27 @@ Setelah proyek dibuat, pergi ke tab **Variables** di Railway dan tambahkan varia
 
 > ⚠️ **`BOT_NUMBER_PAIR` wajib diisi** — ini nomor WhatsApp yang akan dipairing dengan bot.
 
-#### 5. Tambahkan Volume (Penting untuk Sesi Permanen)
-Agar sesi login tidak hilang saat bot restart:
-- Di Railway, buka tab **"Volumes"**
-- Klik **"Add Volume"** dan atur:
-  - Mount Path: `/app/sessions` → Nama: `sessions`
-  - Mount Path: `/app/jadibot` → Nama: `jadibot`
-  - Mount Path: `/app/data` → Nama: `data`
+#### 5. Tambahkan Volume (WAJIB — Agar Sesi Tidak Hilang!)
+
+> ⚠️ **Tanpa Volume, setiap kali Railway restart bot → sesi WhatsApp HILANG → harus pairing ulang dari awal!**
+
+Cara pasang Volume di Railway:
+
+1. Buka **service** bot kamu di Railway dashboard
+2. Klik tab **"Volumes"** (di sebelah Variables, Settings)
+3. Klik tombol **"Create Volume"** / **"Add Volume"**
+4. Tambahkan **3 volume** berikut satu per satu:
+
+| No | Isi kolom **Mount Path** | Isi kolom **Volume Name** |
+|---|---|---|
+| 1 | `/app/sessions` | `sessions` |
+| 2 | `/app/jadibot` | `jadibot` |
+| 3 | `/app/data` | `data` |
+
+5. Klik **"Add"** / **"Save"** untuk setiap volume
+6. Railway akan otomatis redeploy setelah volume ditambahkan
+
+> ✅ Setelah volume dipasang, sesi login WhatsApp akan **tetap tersimpan** meskipun bot restart berkali-kali — tidak perlu pairing ulang.
 
 #### 6. Deploy & Lihat Log
 - Railway otomatis build menggunakan **Dockerfile** yang sudah ada

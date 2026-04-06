@@ -254,14 +254,17 @@ export default async function handleAntiTagSW(message, hisoka) {
             console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan (tanpa hapus/kick).\x1b[39m');
         }
 
-        // Update & simpan warning dulu
-        if (!data.warnings[remoteJid]) data.warnings[remoteJid] = {};
-        if (!data.warnings[remoteJid][senderJid]) data.warnings[remoteJid][senderJid] = 0;
-        data.warnings[remoteJid][senderJid] += 1;
+        // Reload fresh dari disk tepat sebelum update warning (hindari race condition)
+        const freshData = loadData();
+        if (!freshData.warnings[remoteJid]) freshData.warnings[remoteJid] = {};
+        if (!freshData.warnings[remoteJid][senderJid]) freshData.warnings[remoteJid][senderJid] = 0;
+        freshData.warnings[remoteJid][senderJid] += 1;
 
-        const newWarn = data.warnings[remoteJid][senderJid];
+        const newWarn = freshData.warnings[remoteJid][senderJid];
         const maxWarnings = antiTagSWConfig.maxWarnings ?? 3;
-        saveData(data);
+        saveData(freshData);
+        // Ganti referensi data ke freshData untuk blok berikutnya
+        Object.assign(data, freshData);
 
         const now = new Date();
         const timeStr = now.toLocaleTimeString('id-ID', {
@@ -277,9 +280,9 @@ export default async function handleAntiTagSW(message, hisoka) {
         const [contentLabel, contentEmoji] = detectStatusContentType(message);
 
         if (newWarn >= maxWarnings) {
-            // Reset warning
-            delete data.warnings[remoteJid][senderJid];
-            saveData(data);
+            // Reset warning setelah max tercapai
+            delete freshData.warnings[remoteJid][senderJid];
+            saveData(freshData);
 
             const kickStatusLine = isAdmin
                 ? `💥 *Status:* Telah di-*KICK* dari grup!`

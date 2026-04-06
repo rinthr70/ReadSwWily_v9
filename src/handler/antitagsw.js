@@ -157,22 +157,28 @@ export default async function handleAntiTagSW(message, hisoka) {
         const botJid = jidNormalizedUser(hisoka.user?.id || '');
         if (areJidsSameUser(senderJid, botJid)) return;
 
-        // Cek apakah sender admin & bot adalah admin
+        // Selalu fetch live metadata agar admin status akurat (tidak pakai cache)
         let groupMeta = null;
         try {
-            groupMeta = hisoka.groups?.read(remoteJid);
-            if (!groupMeta?.participants?.length) {
-                groupMeta = await hisoka.groupMetadata(remoteJid);
-            }
+            groupMeta = await hisoka.groupMetadata(remoteJid);
+            if (groupMeta) hisoka.groups?.write(remoteJid, groupMeta);
         } catch (_) {
-            try { groupMeta = await hisoka.groupMetadata(remoteJid); } catch (_2) {}
+            groupMeta = hisoka.groups?.read(remoteJid) || null;
+        }
+
+        // Helper: bandingkan JID dengan ekstrak nomor saja (tahan LID format)
+        const botNumber = botJid.split('@')[0];
+        const senderNumberClean = senderJid.split('@')[0];
+
+        function findParticipant(participants, targetNumber) {
+            return participants?.find(p => {
+                const pNum = (p.phoneNumber || p.id || '').split('@')[0];
+                return pNum === targetNumber || (p.lid && p.lid.split('@')[0] === targetNumber);
+            });
         }
 
         if (groupMeta?.participants) {
-            const senderParticipant = groupMeta.participants.find(p =>
-                areJidsSameUser(p.phoneNumber || p.id, senderJid) ||
-                areJidsSameUser(p.lid, senderJid)
-            );
+            const senderParticipant = findParticipant(groupMeta.participants, senderNumberClean);
             if (senderParticipant?.admin) {
                 console.log(`\x1b[33m[AntiTagSW] Admin tag SW: ${senderNumber} — balas + reaksi\x1b[39m`);
                 try {
@@ -215,23 +221,16 @@ export default async function handleAntiTagSW(message, hisoka) {
                 } catch (_) {}
                 return;
             }
-
-            const botParticipant = groupMeta.participants.find(p =>
-                areJidsSameUser(p.phoneNumber || p.id, botJid)
-            );
-            if (!botParticipant?.admin) {
-                console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan (tanpa hapus/kick).\x1b[39m');
-            }
         }
 
-        const isAdmin = (() => {
-            try {
-                const bp = groupMeta?.participants?.find(p =>
-                    areJidsSameUser(p.phoneNumber || p.id, botJid)
-                );
-                return !!bp?.admin;
-            } catch (_) { return false; }
-        })();
+        const botParticipantLive = findParticipant(groupMeta?.participants, botNumber);
+        const isAdmin = !!botParticipantLive?.admin;
+
+        console.log(`\x1b[33m[AntiTagSW] Bot admin check: ${botNumber} → admin=${isAdmin}\x1b[39m`);
+
+        if (!isAdmin) {
+            console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan (tanpa hapus/kick).\x1b[39m');
+        }
 
         console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | Admin: ${isAdmin}\x1b[39m`);
 

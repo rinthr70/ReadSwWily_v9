@@ -1,179 +1,37 @@
 🤖 *Script Bot Auto Reaction V8*
-
-🤖 *Update Script — AntiTagSW Upgrade, UPSWGC Upgrade & Fix YT*
 📅 Senin, 6 April 2026
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📋 *CHANGELOG WILY-BOT*
+✨ *FITUR BARU*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+◈ *AntiTagSW*
+  ✦ Deteksi tag grup lewat caption media & reply
+  ✦ Peringatan kini tampilkan statistik grup
+    (total member, admin, rasio + grafik batang)
+  ✦ Bot otomatis reaction story pelanggar
+    saat mereka menandai grup via status WA
+  ✦ Tampilan pesan peringatan diperbarui
+    (header, progress bar ◆◆◇, layout 3 blok)
 
-✨ *FITUR BARU / PENINGKATAN*
+◈ *UPSWGC*
+  ✦ Bisa kirim langsung lewat caption media
+    (tidak harus reply dulu)
+  ✦ Audio + caption sekarang diizinkan
+  ✦ Button pilih grup tampilkan info member & admin
+  ✦ Button muncul sebagai reply ke pesan .upswgc
+  ✦ Bot otomatis reaction story pengirim
+    setelah status berhasil terkirim ke grup
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-> 📌 *AntiTagSW — Deteksi Diperluas (Caption & Reply)*
-└ Sebelumnya: hanya mendeteksi tag grup via Status WA
-  (groupStatusMentionMessage, groupStatusMessageV2,
-  groupMentionedMessage)
-└ Sekarang: juga mendeteksi tag grup lewat:
-  ▸ Caption media (gambar/video/audio/dokumen/teks)
-    yang mengandung contextInfo.groupJid atau
-    contextInfo.mentionedJid yang berisi @g.us
-  ▸ Reply/quoted ke pesan status tag
-└ Setiap peringatan kini tampilkan metode yang dipakai:
-  "Status WA" atau "Caption/Reply"
+🔧 *BUG FIX*
 
-> 📌 *AntiTagSW — Informasi Grup di Peringatan*
-└ Setiap pesan peringatan kini memuat Statistik Grup:
-  ▸ 👥 Total Member
-  ▸ 🛡️ Total Admin
-  ▸ 🙋 Member Biasa
-  ▸ 📈 Rasio Admin (%) + grafik batang [████░░░░░░]
-└ Data diambil realtime dari groupMetadata
+◈ *YTMP3 / YTMP4 / Play*
+  ✦ Binary yt-dlp tidak ada → sudah didownload ulang
+  ✦ Error JS runtime → tambah flag --js-runtimes node
+  ✦ Tambah fungsi auto-download yt-dlp otomatis
+    jika binary hilang / terhapus
 
-> 📌 *AntiTagSW — Auto-React Story Pelanggar*
-└ Setiap kali seseorang menandai grup via Status WA,
-  bot otomatis mereaction story mereka
-└ Tujuan: agar pelanggar tahu bot "melihat" story-nya
-  dan peringatan lebih berkesan / tidak diabaikan
-└ Reaction dikirim ke status@broadcast dengan
-  messageKey.id milik story si pelanggar
-└ Berjalan bersamaan dengan pengiriman pesan peringatan
-  ke grup — tidak ada delay tambahan
-
-> 📌 *AntiTagSW — Tampilan Pesan Diperbarui*
-└ Header bold: ⬛⬛⬛ ✦ ⚠️ ANTI-TAG STATUS ⚠️ ✦ ⬛⬛⬛
-└ Pemisah seksi: ◈━━━━━━━━━━━━━━━━━━━━━━━◈
-└ Progress bar warning pakai simbol keren: ◆◆◇ 2/3
-└ Struktur 3 blok: Info Pelanggar → Statistik Grup
-  → Status Peringatan
-└ Pesan Admin juga dapat info statistik grup
-
-> 📌 *UPSWGC — Kirim Langsung via Caption*
-└ Sebelumnya: hanya bisa lewat reply pesan lain
-└ Sekarang juga bisa:
-  ▸ Kirim gambar + caption ".upswgc [teks]" → langsung
-  ▸ Kirim video + caption ".upswgc [teks]" → langsung
-  ▸ Kirim audio + caption ".upswgc [teks]" → langsung
-└ Urutan prioritas:
-  1. Media di pesan saat ini (caption langsung)
-  2. Reply ke pesan lain yang berisi media
-  3. Teks saja tanpa media
-
-> 📌 *UPSWGC — Audio + Caption Diizinkan*
-└ Sebelumnya: audio + caption diblok dengan error
-  "❌ Audio tidak boleh disertai caption"
-└ Sekarang: audio bisa disertai caption
-└ Caption audio dikirim sebagai status teks terpisah
-  ke grup (karena WA tidak support caption native
-  pada audioMessage), audio terkirim dulu lalu teks
-  menyusul dengan delay 800ms
-
-> 📌 *UPSWGC — Button Pilih Grup Berisi Info Grup*
-└ Setiap baris grup di button selection kini tampilkan:
-  ▸ 👥 X member  ◆  🛡️ Y admin
-  ▸ Grafik rasio admin [████░░░░░░]
-└ Baris "Semua Grup" tampilkan total gabungan:
-  ◆ X grup  ◆ 👥 Y member  ◆ 🛡️ Z admin
-
-> 📌 *UPSWGC — Button Reply ke Pesan .upswgc*
-└ Sebelumnya: button muncul sebagai pesan baru
-  (tidak ada reply/quote ke pesan asal)
-└ Sekarang: button muncul sebagai reply ke pesan
-  .upswgc yang dikirim pengguna
-└ Teknis: ganti dari generateWAMessageFromContent
-  + relayMessage ke m.reply({ interactiveMessage:
-  { contextInfo: { stanzaId, participant,
-  quotedMessage } } }) — pola sama seperti Jadibot
-
-> 📌 *UPSWGC — Tampilan Button Body Diperbarui*
-└ Header: ⬛⬛⬛ ✦ 📢 KIRIM GROUP STATUS ✦ ⬛⬛⬛
-└ Seksi Info Konten (tipe + preview caption)
-└ Seksi Stats Semua Grup (total grup/member/admin)
-└ Pemisah: ◈━━━━━━━━━━━━━━━━━━━━━━━◈
-└ Pesan bantuan (.upswgc kosong) tampilkan 3 cara:
-  Cara 1 (Langsung), Cara 2 (Reply), Cara 3 (Teks)
-
-> 📌 *UPSWGC — Auto-React Story Pengirim*
-└ Setelah status berhasil dikirim ke grup via .upswgc,
-  bot otomatis mereaction story si pengirim
-└ Tujuan: pengirim bisa lihat bot sudah "membaca"
-  story mereka — terasa lebih hidup & interaktif
-└ Reaction dikirim ke status@broadcast dengan
-  messageKey.id milik story yang baru dikirim
-└ Berjalan otomatis di akhir proses pengiriman,
-  tidak perlu input tambahan dari pengguna
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔧 *PERBAIKAN (BUG FIX)*
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-> 📌 *YTMP3 / YTMP4 / Play — Binary yt-dlp Tidak Ada*
-└ Masalah: binary tmp/yt-dlp tidak ada di server
-└ Akibat: .ytmp3 .ytmp4 .play langsung error saat
-  mencoba eksekusi file yang tidak ditemukan
-└ Fix manual: download binary yt-dlp Linux x86_64
-  dari GitHub releases ke tmp/yt-dlp, lalu chmod 755
-
-> 📌 *YTMP3 / YTMP4 / Play — JavaScript Runtime Error*
-└ Masalah: yt-dlp versi baru butuh JS runtime untuk
-  bypass enkripsi YouTube (nsig), default hanya Deno
-└ Error: "No supported JavaScript runtime could be
-  found. Only deno is enabled by default. Please
-  install or enable a supported JavaScript runtime"
-└ Fix: tambah flag --js-runtimes node di 5 titik exec:
-  ▸ .play     → 1x (download mp3)
-  ▸ .ytmp3    → 2x (dump-json meta + download mp3)
-  ▸ .ytmp4    → 2x (dump-json meta + download mp4)
-└ Node.js v20 tersedia di /nix/store/... (Replit env)
-└ Perintah download lengkap:
-  ▸ MP3 : --no-playlist -x --audio-format mp3
-          --audio-quality 5
-  ▸ MP4 : --no-playlist -f bestvideo[height<=360]
-          +bestaudio --merge-output-format mp4
-
-> 📌 *YTMP3 / YTMP4 / Play — Fungsi ensureYtdlp()*
-└ Tambah fungsi ensureYtdlp() di awal message.js
-└ Dipanggil sebelum setiap perintah yt-dlp (.play,
-  .ytmp3, .ytmp4)
-└ Cara kerja:
-  ▸ Cek apakah tmp/yt-dlp sudah ada
-  ▸ Jika ada → langsung return path binary
-  ▸ Jika tidak ada → download otomatis via curl -L
-    dari github.com/yt-dlp/yt-dlp releases/latest
-    (binary: yt-dlp_linux) + chmod 755
-└ Timeout download: 120 detik
-└ Mencegah error berulang saat binary hilang atau
-  terhapus oleh cleaner tmp dir
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⚙️ *CATATAN TEKNIS*
-
-└ File diubah: src/handler/antitagsw.js
-  → Tambah deteksi caption & reply
-  → Tambah fungsi detectCaptionGroupTag()
-  → Tambah fungsi buildGroupStats()
-  → Redesign semua template pesan peringatan
-  → Tambah auto-react story pelanggar via
-    hisoka.readMessages + sendMessage react
-
-└ File diubah: src/handler/message.js
-  → upswgc: tambah PRIORITAS 1 (media langsung)
-  → upswgc: hapus larangan audio + caption
-  → upswgc: ubah swgcRows dengan info member/admin
-  → upswgc: ganti ke m.reply({ interactiveMessage })
-  → upswgc: tambah auto-react story pengirim setelah
-    status terkirim ke semua grup tujuan
-  → sendstatus: tambah ssAudioCaption handling
-  → ensureYtdlp(): fungsi auto-download yt-dlp
-  → Semua exec yt-dlp ditambah --js-runtimes node
-
-└ Jumlah command: 80 command (tidak berubah)
-└ Semua perubahan hot-reload tanpa restart bot ✅
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🤖 *Wily-Bot* — Updated 6 Apr 2026

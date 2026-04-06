@@ -4,7 +4,7 @@
 
 <br/>
 
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Baileys-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://github.com/WhiskeySockets/Baileys)
 [![License](https://img.shields.io/badge/License-FREE-blue?style=for-the-badge)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)]()
@@ -14,6 +14,10 @@
 > **WhatsApp Bot multi-fitur berbasis [Baileys](https://github.com/WhiskeySockets/Baileys)**
 > Script ini **FREE** — tidak untuk diperjualbelikan!
 
+<br/>
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?template=https://github.com/Wilykun1994/wily-bot)
+
 </div>
 
 ---
@@ -21,7 +25,8 @@
 ## 📋 Daftar Isi
 
 - [✨ Fitur Unggulan](#-fitur-unggulan)
-- [📦 Instalasi](#-instalasi)
+- [🚀 Deploy ke Railway](#-deploy-ke-railway)
+- [📦 Instalasi Manual](#-instalasi-manual)
 - [⚙️ Konfigurasi](#️-konfigurasi)
 - [📖 Daftar Command](#-daftar-command)
 - [🎬 YouTube Downloader](#-youtube-downloader)
@@ -78,7 +83,112 @@
 
 ---
 
-## 📦 Instalasi
+## 🚀 Deploy ke Railway
+
+> Railway adalah platform hosting cloud gratis (ada free tier) yang bisa jalankan bot kamu 24 jam tanpa perlu VPS.
+
+<div align="center">
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?template=https://github.com/Wilykun1994/wily-bot)
+
+</div>
+
+<details>
+<summary><b>🔽 Klik untuk panduan lengkap deploy ke Railway (Bahasa Indonesia)</b></summary>
+
+<br/>
+
+### Apa itu Railway?
+Railway adalah layanan cloud hosting yang memungkinkan kamu menjalankan bot Node.js secara online tanpa perlu menyewa VPS sendiri. Bot kamu akan jalan 24/7 selama ada koneksi internet.
+
+---
+
+### Langkah-Langkah Deploy
+
+#### 1. Siapkan Repository GitHub
+Sebelum deploy, pastikan kode bot kamu sudah ada di GitHub:
+```bash
+git init
+git add .
+git commit -m "first commit"
+git remote add origin https://github.com/USERNAME/wily-bot.git
+git push -u origin main
+```
+
+#### 2. Buat Akun Railway
+- Buka [railway.com](https://railway.com) dan daftar dengan akun GitHub
+- Verifikasi akun kamu (penting untuk bisa deploy)
+
+#### 3. Buat Proyek Baru
+- Klik tombol **"Deploy on Railway"** di atas, **ATAU**
+- Masuk ke dashboard Railway → klik **"New Project"** → pilih **"Deploy from GitHub repo"**
+- Pilih repository `wily-bot` kamu
+
+#### 4. Atur Environment Variables (Wajib!)
+Setelah proyek dibuat, pergi ke tab **Variables** di Railway dan tambahkan variabel berikut:
+
+| Variabel | Nilai | Keterangan |
+|---|---|---|
+| `BOT_NUMBER_PAIR` | `6281234567890` | Nomor WA bot (tanpa +, pakai kode negara) |
+| `BOT_SESSION_NAME` | `hisoka` | Nama sesi bot (bebas) |
+| `BOT_LOGGER_LEVEL` | `silent` | Level log (biarkan silent) |
+| `BOT_LOG_MESSAGE` | `true` | Log pesan masuk |
+| `BOT_MAX_RETRIES` | `5` | Maksimal reconnect otomatis |
+| `BOT_PREFIX` | `.` | Prefix command bot |
+| `BOT_ALLOWED_NO_PREFIX` | `true` | Izinkan command tanpa prefix |
+
+> ⚠️ **`BOT_NUMBER_PAIR` wajib diisi** — ini nomor WhatsApp yang akan dipairing dengan bot.
+
+#### 5. Tambahkan Volume (Penting untuk Sesi Permanen)
+Agar sesi login tidak hilang saat bot restart:
+- Di Railway, buka tab **"Volumes"**
+- Klik **"Add Volume"** dan atur:
+  - Mount Path: `/app/sessions` → Nama: `sessions`
+  - Mount Path: `/app/jadibot` → Nama: `jadibot`
+  - Mount Path: `/app/data` → Nama: `data`
+
+#### 6. Deploy & Lihat Log
+- Railway otomatis build menggunakan **Dockerfile** yang sudah ada
+- Buka tab **"Logs"** untuk lihat proses deployment
+- Tunggu sampai muncul **Pairing Code** di log
+
+#### 7. Pairing WhatsApp
+Saat bot pertama kali jalan, Railway akan tampilkan **Pairing Code** di log, contoh:
+```
+📌 Kode Pairing: ABCD-1234
+```
+Cara masukkan kode:
+1. Buka **WhatsApp** di HP
+2. Ketuk **⋮** (titik tiga) → **Perangkat Tertaut**
+3. Pilih **Tautkan Perangkat** → **Tautkan dengan Nomor Telepon**
+4. Masukkan kode pairing dari log Railway
+
+#### 8. Bot Siap Digunakan! 🎉
+Setelah pairing berhasil, bot akan online dan bisa menerima command.
+
+---
+
+### File Penting untuk Railway
+
+| File | Fungsi |
+|---|---|
+| `Dockerfile` | Instruksi untuk Railway build lingkungan bot (Node.js 20 + FFmpeg) |
+| `railway.toml` | Konfigurasi build dan restart otomatis jika bot crash |
+| `.env` | **Jangan diupload!** Gunakan Variables di Railway dashboard |
+
+---
+
+### Tips & Catatan
+- **Free tier Railway** memberikan $5 kredit/bulan, cukup untuk bot ringan
+- Jika bot tiba-tiba mati, Railway akan **restart otomatis** (sudah dikonfigurasi)
+- Sesi login tersimpan di volume, jadi **tidak perlu pairing ulang** setelah restart
+- Jika volume belum diatur, sesi akan hilang setiap kali Railway restart container
+
+</details>
+
+---
+
+## 📦 Instalasi Manual
 
 <details>
 <summary><b>🔽 Klik untuk melihat langkah instalasi lengkap</b></summary>

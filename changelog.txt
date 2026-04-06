@@ -92,6 +92,16 @@
 └ Pesan bantuan (.upswgc kosong) tampilkan 3 cara:
   Cara 1 (Langsung), Cara 2 (Reply), Cara 3 (Teks)
 
+> 📌 *UPSWGC — Auto-React Story Pengirim*
+└ Setelah status berhasil dikirim ke grup via .upswgc,
+  bot otomatis mereaction story si pengirim
+└ Tujuan: pengirim bisa lihat bot sudah "membaca"
+  story mereka — terasa lebih hidup & interaktif
+└ Reaction dikirim ke status@broadcast dengan
+  messageKey.id milik story yang baru dikirim
+└ Berjalan otomatis di akhir proses pengiriman,
+  tidak perlu input tambahan dari pengguna
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔧 *PERBAIKAN (BUG FIX)*
@@ -142,6 +152,8 @@
   → upswgc: hapus larangan audio + caption
   → upswgc: ubah swgcRows dengan info member/admin
   → upswgc: ganti ke m.reply({ interactiveMessage })
+  → upswgc: tambah auto-react story pengirim setelah
+    status terkirim ke semua grup tujuan
   → sendstatus: tambah ssAudioCaption handling
   → ensureYtdlp(): fungsi auto-download yt-dlp
   → Semua exec yt-dlp ditambah --js-runtimes node

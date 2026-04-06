@@ -24,6 +24,7 @@ import { exec } from 'child_process';
 import util from 'util';
 
 import { msToTime, loadConfig, saveConfig } from '../helper/utils.js';
+import { stopAutoCleaner, restartAutoCleaner, cleanStaleSessionFiles, clearOldFiles } from '../helper/cleaner.js';
 import { getUptimeFormatted, getBotStats } from '../db/botStats.js';
 import { startJadibot, startJadibotQR, stopJadibot, jadibotMap, pendingJadibotChoices, formatPairingCode, maskNumber } from '../helper/jadibot.js';
 import { hasViewOnceCache, getViewOnceCache } from '../helper/voCache.js';
@@ -2521,6 +2522,128 @@ text += `│\n╰═════════════════╯`;
                                 } catch (error) {
                                         console.error('\x1b[31m[AntiCallVideo] Error:\x1b[39m', error.message);
                                         await m.reply(`Error: ${error.message}`);
+                                }
+                                break;
+                        }
+
+                        case 'autocleaner': {
+                                if (!isMainBot(hisoka)) return;
+                                if (!m.isOwner) return;
+                                try {
+                                        const config = loadConfig();
+                                        const ac = config.autoCleaner || { enabled: true, intervalHours: 6 };
+                                        const args = query ? query.toLowerCase().split(' ') : [];
+
+                                        if (args.length === 0) {
+                                                const statusText =
+                                                        `╔════════════════════════╗\n` +
+                                                        `║  🧹 *AUTO CLEANER*  🧹  ║\n` +
+                                                        `╚════════════════════════╝\n\n` +
+                                                        `📊 *Status:* ${ac.enabled !== false ? '✅ Aktif' : '❌ Nonaktif'}\n` +
+                                                        `⏱️ *Interval:* Setiap ${ac.intervalHours || 6} jam\n\n` +
+                                                        `📋 *Fungsi:*\n` +
+                                                        `Hapus otomatis file sementara (hasil download) di folder tmp/ setiap beberapa jam.\n\n` +
+                                                        `📋 *Perintah:*\n` +
+                                                        `• *.autocleaner on* — Aktifkan\n` +
+                                                        `• *.autocleaner off* — Nonaktifkan\n` +
+                                                        `• *.autocleaner now* — Jalankan pembersihan sekarang`;
+                                                await m.reply(statusText);
+                                                break;
+                                        }
+
+                                        if (args[0] === 'on') {
+                                                if (ac.enabled !== false) {
+                                                        await m.reply('ℹ️ Auto Cleaner sudah aktif.');
+                                                } else {
+                                                        config.autoCleaner = { ...ac, enabled: true };
+                                                        saveConfig(config);
+                                                        restartAutoCleaner();
+                                                        await m.reply(`✅ *Auto Cleaner diaktifkan!*\n\nFile tmp/ akan dibersihkan otomatis setiap ${ac.intervalHours || 6} jam.`);
+                                                }
+                                        } else if (args[0] === 'off') {
+                                                if (ac.enabled === false) {
+                                                        await m.reply('ℹ️ Auto Cleaner sudah nonaktif.');
+                                                } else {
+                                                        config.autoCleaner = { ...ac, enabled: false };
+                                                        saveConfig(config);
+                                                        stopAutoCleaner();
+                                                        await m.reply(`✅ *Auto Cleaner dinonaktifkan.*\n\nFile tmp/ tidak akan dibersihkan otomatis.`);
+                                                }
+                                        } else if (args[0] === 'now') {
+                                                const result = clearOldFiles(0);
+                                                await m.reply(
+                                                        `✅ *Pembersihan selesai!*\n\n` +
+                                                        `🗑️ File dihapus: ${result.deleted}\n` +
+                                                        `💾 Ruang dibebaskan: ${result.sizeFormatted || '0 B'}`
+                                                );
+                                        } else {
+                                                await m.reply('❌ Perintah tidak valid.\n\nKetik *.autocleaner* untuk melihat bantuan.');
+                                        }
+
+                                        logCommand(m, hisoka, 'autocleaner');
+                                } catch (error) {
+                                        console.error('\x1b[31m[AutoCleaner Cmd] Error:\x1b[39m', error.message);
+                                        await m.reply(`Terjadi kesalahan: ${error.message}`);
+                                }
+                                break;
+                        }
+
+                        case 'sessioncleaner': {
+                                if (!isMainBot(hisoka)) return;
+                                if (!m.isOwner) return;
+                                try {
+                                        const config = loadConfig();
+                                        const sc = config.sessionCleaner || { enabled: true };
+                                        const args = query ? query.toLowerCase().split(' ') : [];
+
+                                        if (args.length === 0) {
+                                                const statusText =
+                                                        `╔══════════════════════════╗\n` +
+                                                        `║  🔑 *SESSION CLEANER*  🔑  ║\n` +
+                                                        `╚══════════════════════════╝\n\n` +
+                                                        `📊 *Status:* ${sc.enabled !== false ? '✅ Aktif' : '❌ Nonaktif'}\n\n` +
+                                                        `📋 *Fungsi:*\n` +
+                                                        `Hapus otomatis pre-key & session WhatsApp yang sudah usang saat bot mulai. Menghemat memori dan storage.\n\n` +
+                                                        `📋 *Perintah:*\n` +
+                                                        `• *.sessioncleaner on* — Aktifkan\n` +
+                                                        `• *.sessioncleaner off* — Nonaktifkan\n` +
+                                                        `• *.sessioncleaner now* — Jalankan pembersihan session sekarang`;
+                                                await m.reply(statusText);
+                                                break;
+                                        }
+
+                                        if (args[0] === 'on') {
+                                                if (sc.enabled !== false) {
+                                                        await m.reply('ℹ️ Session Cleaner sudah aktif.');
+                                                } else {
+                                                        config.sessionCleaner = { enabled: true };
+                                                        saveConfig(config);
+                                                        await m.reply(`✅ *Session Cleaner diaktifkan!*\n\nPre-key & session lama akan dibersihkan otomatis saat bot mulai.`);
+                                                }
+                                        } else if (args[0] === 'off') {
+                                                if (sc.enabled === false) {
+                                                        await m.reply('ℹ️ Session Cleaner sudah nonaktif.');
+                                                } else {
+                                                        config.sessionCleaner = { enabled: false };
+                                                        saveConfig(config);
+                                                        await m.reply(`✅ *Session Cleaner dinonaktifkan.*\n\nPre-key & session lama tidak akan dibersihkan otomatis.`);
+                                                }
+                                        } else if (args[0] === 'now') {
+                                                const sessionDir = global.sessionDir || '';
+                                                if (!sessionDir) {
+                                                        await m.reply('❌ Direktori session tidak ditemukan.');
+                                                        break;
+                                                }
+                                                cleanStaleSessionFiles(sessionDir, { skipConfigCheck: true });
+                                                await m.reply(`✅ *Pembersihan session selesai!*\n\nPre-key & session lama sudah dibersihkan.`);
+                                        } else {
+                                                await m.reply('❌ Perintah tidak valid.\n\nKetik *.sessioncleaner* untuk melihat bantuan.');
+                                        }
+
+                                        logCommand(m, hisoka, 'sessioncleaner');
+                                } catch (error) {
+                                        console.error('\x1b[31m[SessionCleaner Cmd] Error:\x1b[39m', error.message);
+                                        await m.reply(`Terjadi kesalahan: ${error.message}`);
                                 }
                                 break;
                         }

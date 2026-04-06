@@ -15,6 +15,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { loadConfig } from './utils.js';
 
 const tmpDir = path.join(process.cwd(), 'tmp');
 
@@ -170,16 +171,43 @@ function formatBytes(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-export function startAutoCleaner(intervalHours = 6) {
-    console.log(`\x1b[32m[Cleaner]\x1b[39m Auto-cleaner started (every ${intervalHours}h)`);
-    
-    clearOldFiles(24);
-    
-    const interval = setInterval(() => {
-        clearOldFiles(6);
-    }, intervalHours * 60 * 60 * 1000);
+let _autoCleanerInterval = null;
 
-    return interval;
+export function stopAutoCleaner() {
+    if (_autoCleanerInterval) {
+        clearInterval(_autoCleanerInterval);
+        _autoCleanerInterval = null;
+        console.log(`\x1b[33m[Cleaner]\x1b[39m Auto-cleaner dihentikan`);
+    }
+}
+
+export function startAutoCleaner(intervalHours = 6) {
+    const config = loadConfig();
+    const cleanerConfig = config.autoCleaner ?? { enabled: true };
+
+    if (cleanerConfig.enabled === false) {
+        console.log(`\x1b[33m[Cleaner]\x1b[39m Auto-cleaner dinonaktifkan (config)`);
+        return null;
+    }
+
+    const hours = cleanerConfig.intervalHours || intervalHours;
+
+    stopAutoCleaner();
+
+    console.log(`\x1b[32m[Cleaner]\x1b[39m Auto-cleaner started (every ${hours}h)`);
+    clearOldFiles(24);
+
+    _autoCleanerInterval = setInterval(() => {
+        clearOldFiles(hours);
+    }, hours * 60 * 60 * 1000);
+
+    return _autoCleanerInterval;
+}
+
+export function restartAutoCleaner() {
+    const config = loadConfig();
+    const hours = config.autoCleaner?.intervalHours || 6;
+    return startAutoCleaner(hours);
 }
 
 /**
@@ -197,7 +225,14 @@ export function startAutoCleaner(intervalHours = 6) {
  * firstUnuploadedPreKeyId. Buffer 200 cukup karena WhatsApp biasanya
  * menyimpan maksimal 100–200 pre-key per perangkat di servernya.
  */
-export function cleanStaleSessionFiles(sessionDir) {
+export function cleanStaleSessionFiles(sessionDir, { skipConfigCheck = false } = {}) {
+    if (!skipConfigCheck) {
+        try {
+            const config = loadConfig();
+            const sc = config.sessionCleaner ?? { enabled: true };
+            if (sc.enabled === false) return;
+        } catch {}
+    }
     try {
         const credsPath = path.join(sessionDir, 'creds.json')
         if (!fs.existsSync(credsPath)) return
@@ -290,5 +325,7 @@ export default {
     clearOldFiles,
     getTmpStats,
     startAutoCleaner,
+    stopAutoCleaner,
+    restartAutoCleaner,
     cleanStaleSessionFiles
 };

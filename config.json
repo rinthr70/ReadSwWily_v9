@@ -73,5 +73,12 @@
   "antiTagSW": {
     "enabled": true,
     "maxWarnings": 3
+  },
+  "autoCleaner": {
+    "enabled": true,
+    "intervalHours": 6
+  },
+  "sessionCleaner": {
+    "enabled": true
   }
 }

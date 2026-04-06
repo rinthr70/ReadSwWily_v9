@@ -4108,7 +4108,34 @@ text += `╰═════════════════╯`;
                                 let swgcMeta = {};
                                 let swgcTempFile = null;
 
-                                if (m.isQuoted && m.quoted) {
+                                // PRIORITAS 1: Media di pesan saat ini (kirim gambar/video/audio dengan caption .upswgc teks)
+                                const swgcSelfType = m.type || '';
+                                if (m.isMedia && /image|video|audio/i.test(swgcSelfType)) {
+                                        try {
+                                                const swgcBuf = await m.downloadMedia();
+                                                if (!swgcBuf) return m.reply('❌ Gagal mengambil media.');
+
+                                                const swgcMime = m.content?.mimetype || 'application/octet-stream';
+                                                const swgcExt = swgcMime.split('/')[1]?.split(';')[0]?.trim() || 'bin';
+                                                swgcTempFile = path.join(process.cwd(), 'tmp', `upswgc_${Date.now()}.${swgcExt}`);
+                                                fs.writeFileSync(swgcTempFile, swgcBuf);
+
+                                                if (/image/i.test(swgcSelfType)) {
+                                                        swgcMeta = { type: 'image', file: swgcTempFile, mime: swgcMime };
+                                                        if (swgcCaption) swgcMeta.caption = swgcCaption;
+                                                } else if (/video/i.test(swgcSelfType)) {
+                                                        swgcMeta = { type: 'video', file: swgcTempFile, mime: swgcMime };
+                                                        if (swgcCaption) swgcMeta.caption = swgcCaption;
+                                                } else if (/audio/i.test(swgcSelfType)) {
+                                                        swgcMeta = { type: 'audio', file: swgcTempFile, mime: swgcMime };
+                                                        if (swgcCaption) swgcMeta.caption = swgcCaption;
+                                                }
+                                        } catch (e) {
+                                                if (swgcTempFile && fs.existsSync(swgcTempFile)) fs.unlinkSync(swgcTempFile);
+                                                return m.reply('❌ Gagal memproses media: ' + (e.message || e));
+                                        }
+                                // PRIORITAS 2: Reply ke pesan lain yang berisi media
+                                } else if (m.isQuoted && m.quoted) {
                                         try {
                                                 const qType = m.quoted.type || '';
                                                 if (!/image|video|audio/i.test(qType)) {
@@ -4145,16 +4172,20 @@ text += `╰═════════════════╯`;
                                                 `✦ 📢 *.UPSWGC* — CARA PAKAI ✦\n` +
                                                 `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n\n` +
                                                 `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
-                                                `  🖼️ *Kirim Media ke Grup*\n` +
+                                                `  🖼️ *Cara 1 — Kirim Langsung*\n` +
                                                 `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
-                                                `▸ Reply *foto* + *.upswgc [caption]*\n` +
-                                                `▸ Reply *video* + *.upswgc [caption]*\n` +
-                                                `▸ Reply *audio* + *.upswgc [caption]*\n` +
+                                                `▸ Kirim *foto* dengan caption *.upswgc [teks]*\n` +
+                                                `▸ Kirim *video* dengan caption *.upswgc [teks]*\n` +
+                                                `▸ Kirim *audio* dengan caption *.upswgc [teks]*\n\n` +
                                                 `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
-                                                `  💬 *Kirim Teks ke Grup*\n` +
+                                                `  🔁 *Cara 2 — Reply Pesan*\n` +
+                                                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                                `▸ Reply *foto/video/audio* + *.upswgc [caption]*\n\n` +
+                                                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                                `  💬 *Cara 3 — Kirim Teks*\n` +
                                                 `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
                                                 `▸ *.upswgc teks pesan kamu*\n\n` +
-                                                `_Bot akan menampilkan pilihan grup tujuan_`
+                                                `_Bot akan menampilkan pilihan grup tujuan_ 👇`
                                         );
                                 }
 

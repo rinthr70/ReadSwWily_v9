@@ -5,32 +5,32 @@
 ✨ *FITUR BARU*
 
 ◈ *AntiTagSW*
-  ✦ Deteksi tag grup lewat caption media & reply
-  ✦ Peringatan kini tampilkan statistik grup
-    (total member, admin, rasio + grafik batang)
-  ✦ Bot otomatis reaction story pelanggar
-    saat mereka menandai grup via status WA
-  ✦ Tampilan pesan peringatan diperbarui
-    (header, progress bar ◆◆◇, layout 3 blok)
+> ✦ Deteksi tag grup lewat *caption media* & *reply*
+> ✦ Peringatan kini tampilkan *statistik grup*
+>   (total member, admin, rasio + grafik batang)
+> ✦ Bot otomatis *reaction story* pelanggar
+>   saat mereka menandai grup via status WA
+> ✦ Tampilan pesan peringatan diperbarui
+>   (header, progress bar `◆◆◇`, layout 3 blok)
 
 ◈ *UPSWGC*
-  ✦ Bisa kirim langsung lewat caption media
-    (tidak harus reply dulu)
-  ✦ Audio + caption sekarang diizinkan
-  ✦ Button pilih grup tampilkan info member & admin
-  ✦ Button muncul sebagai reply ke pesan .upswgc
-  ✦ Bot otomatis reaction story pengirim
-    setelah status berhasil terkirim ke grup
+> ✦ Bisa kirim langsung lewat *caption media*
+>   (tidak harus reply dulu)
+> ✦ *Audio + caption* sekarang diizinkan
+> ✦ Button pilih grup tampilkan *info member & admin*
+> ✦ Button muncul sebagai *reply* ke pesan `.upswgc`
+> ✦ Bot otomatis *reaction story* pengirim
+>   setelah status berhasil terkirim ke grup
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔧 *BUG FIX*
 
 ◈ *YTMP3 / YTMP4 / Play*
-  ✦ Binary yt-dlp tidak ada → sudah didownload ulang
-  ✦ Error JS runtime → tambah flag --js-runtimes node
-  ✦ Tambah fungsi auto-download yt-dlp otomatis
-    jika binary hilang / terhapus
+> ✦ Binary `yt-dlp` tidak ada → sudah didownload ulang
+> ✦ Error JS runtime → tambah flag `--js-runtimes node`
+> ✦ Tambah fungsi *auto-download* `yt-dlp` otomatis
+>   jika binary hilang / terhapus
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 

@@ -17,6 +17,8 @@
 <br/>
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?template=https://github.com/Wilykun1994/wily-bot)
+&nbsp;
+[![Deploy on Fly.io](https://img.shields.io/badge/Deploy%20ke-Fly.io-8B5CF6?style=for-the-badge&logo=fly.io&logoColor=white)](https://fly.io/docs/launch/)
 
 </div>
 
@@ -26,6 +28,7 @@
 
 - [✨ Fitur Unggulan](#-fitur-unggulan)
 - [🚀 Deploy ke Railway](#-deploy-ke-railway)
+- [✈️ Deploy ke Fly.io (Gratis + Volume)](#️-deploy-ke-flyio-gratis--volume)
 - [📦 Instalasi Manual](#-instalasi-manual)
 - [⚙️ Konfigurasi](#️-konfigurasi)
 - [📖 Daftar Command](#-daftar-command)
@@ -197,6 +200,145 @@ Setelah pairing berhasil, bot akan online dan bisa menerima command.
 - Jika bot tiba-tiba mati, Railway akan **restart otomatis** (sudah dikonfigurasi)
 - Sesi login tersimpan di volume, jadi **tidak perlu pairing ulang** setelah restart
 - Jika volume belum diatur, sesi akan hilang setiap kali Railway restart container
+
+</details>
+
+---
+
+## ✈️ Deploy ke Fly.io (Gratis + Volume)
+
+> Fly.io adalah pilihan terbaik jika ingin **gratis selamanya** dengan **Volume permanen** (sesi tidak hilang saat restart). Mendukung Docker langsung — `Dockerfile` yang sudah ada langsung bisa dipakai.
+
+<div align="center">
+
+[![Deploy on Fly.io](https://img.shields.io/badge/Deploy%20ke-Fly.io-8B5CF6?style=for-the-badge&logo=fly.io&logoColor=white)](https://fly.io/docs/launch/)
+
+</div>
+
+<details>
+<summary><b>🔽 Klik untuk panduan lengkap deploy ke Fly.io (Bahasa Indonesia)</b></summary>
+
+<br/>
+
+### Apa itu Fly.io?
+Fly.io adalah platform cloud yang menjalankan container Docker di server global. Free tier-nya memberikan **3 VM gratis** dan **3GB Volume storage gratis** — cukup untuk menjalankan bot WhatsApp 24/7 tanpa bayar.
+
+---
+
+### Persyaratan
+- Akun Fly.io (daftar di [fly.io](https://fly.io))
+- `flyctl` (CLI Fly.io) terinstal di komputer
+
+---
+
+### Langkah-Langkah Deploy
+
+#### 1. Install flyctl (CLI Fly.io)
+
+**Windows:**
+```powershell
+iwr https://fly.io/install.ps1 -useb | iex
+```
+
+**Linux / Mac:**
+```bash
+curl -L https://fly.io/install.sh | sh
+```
+
+#### 2. Login ke Fly.io
+```bash
+fly auth login
+```
+Browser akan terbuka → login dengan akun Fly.io kamu.
+
+#### 3. Clone & Masuk Folder Bot
+```bash
+git clone https://github.com/USERNAME/wily-bot.git
+cd wily-bot
+```
+
+#### 4. Buat App di Fly.io
+```bash
+fly launch --no-deploy
+```
+- Saat ditanya nama app, ketik: `wily-bot` (atau nama lain)
+- Saat ditanya region, pilih: **Singapore (sin)** — paling dekat ke Indonesia
+- File `fly.toml` sudah tersedia, pilih **"Yes"** jika ditanya pakai yang ada
+
+#### 5. Buat Volume (Gratis 3GB)
+Jalankan perintah berikut **satu per satu**:
+```bash
+fly volumes create sessions_vol --size 1 --region sin
+fly volumes create jadibot_vol  --size 1 --region sin
+fly volumes create data_vol     --size 1 --region sin
+```
+
+> ✅ Volume ini **gratis** dan **permanen** — sesi WhatsApp tidak akan hilang meskipun bot restart berkali-kali.
+
+#### 6. Set Environment Variables (Wajib!)
+```bash
+fly secrets set BOT_NUMBER_PAIR=6281234567890
+fly secrets set BOT_SESSION_NAME=hisoka
+fly secrets set BOT_PREFIX=.
+fly secrets set BOT_MAX_RETRIES=5
+fly secrets set BOT_LOG_MESSAGE=true
+```
+
+> ⚠️ Ganti `6281234567890` dengan nomor WhatsApp bot kamu (tanpa +, pakai kode negara).
+
+#### 7. Deploy Bot
+```bash
+fly deploy
+```
+Fly.io akan build Docker image dan jalankan bot. Tunggu sampai selesai.
+
+#### 8. Lihat Log & Ambil Pairing Code
+```bash
+fly logs
+```
+Tunggu sampai muncul **Pairing Code** di log, contoh:
+```
+📌 Kode Pairing: ABCD-1234
+```
+
+#### 9. Pairing WhatsApp
+1. Buka **WhatsApp** di HP
+2. Ketuk **⋮** (titik tiga) → **Perangkat Tertaut**
+3. Pilih **Tautkan Perangkat** → **Tautkan dengan Nomor Telepon**
+4. Masukkan kode pairing dari log Fly.io
+
+#### 10. Bot Siap! 🎉
+Setelah pairing berhasil, bot akan online 24/7.
+
+---
+
+### Perintah Berguna
+
+| Perintah | Fungsi |
+|---|---|
+| `fly logs` | Lihat log bot secara real-time |
+| `fly status` | Cek status bot |
+| `fly deploy` | Update bot setelah edit kode |
+| `fly ssh console` | Masuk langsung ke dalam container |
+| `fly apps restart wily-bot` | Restart bot |
+
+---
+
+### File Penting untuk Fly.io
+
+| File | Fungsi |
+|---|---|
+| `Dockerfile` | Sudah ada — dipakai langsung oleh Fly.io |
+| `fly.toml` | Konfigurasi app, volume, dan region Fly.io |
+| `.env` | **Jangan diupload!** Gunakan `fly secrets set` |
+
+---
+
+### Tips & Catatan
+- **Free tier Fly.io** memberikan 3 VM + 3GB storage gratis selamanya
+- Volume `sessions_vol`, `jadibot_vol`, `data_vol` sudah dikonfigurasi di `fly.toml`
+- Region **sin (Singapore)** dipilih karena paling dekat ke Indonesia → koneksi lebih stabil
+- Jika bot crash, Fly.io akan **restart otomatis**
 
 </details>
 

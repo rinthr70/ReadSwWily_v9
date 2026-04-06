@@ -4130,11 +4130,8 @@ text += `╰═════════════════╯`;
                                                         swgcMeta = { type: 'video', file: swgcTempFile, mime: swgcMime };
                                                         if (swgcCaption) swgcMeta.caption = swgcCaption;
                                                 } else if (/audio/i.test(qType)) {
-                                                        if (swgcCaption) {
-                                                                fs.unlinkSync(swgcTempFile);
-                                                                return m.reply('❌ Audio tidak boleh disertai caption.');
-                                                        }
                                                         swgcMeta = { type: 'audio', file: swgcTempFile, mime: swgcMime };
+                                                        if (swgcCaption) swgcMeta.caption = swgcCaption;
                                                 }
                                         } catch (e) {
                                                 if (swgcTempFile && fs.existsSync(swgcTempFile)) fs.unlinkSync(swgcTempFile);
@@ -4144,10 +4141,20 @@ text += `╰═════════════════╯`;
                                         swgcMeta = { type: 'text', text: swgcCaption };
                                 } else {
                                         return m.reply(
-                                                '📌 *Cara Penggunaan .upswgc*\n\n' +
-                                                '• Reply foto/video/audio lalu ketik *.upswgc [caption]*\n' +
-                                                '• *.upswgc teks pesan* → kirim teks ke grup\n\n' +
-                                                '_Bot akan tampilkan pilihan grup tujuan_'
+                                                `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
+                                                `✦ 📢 *.UPSWGC* — CARA PAKAI ✦\n` +
+                                                `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n\n` +
+                                                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                                `  🖼️ *Kirim Media ke Grup*\n` +
+                                                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                                `▸ Reply *foto* + *.upswgc [caption]*\n` +
+                                                `▸ Reply *video* + *.upswgc [caption]*\n` +
+                                                `▸ Reply *audio* + *.upswgc [caption]*\n` +
+                                                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                                `  💬 *Kirim Teks ke Grup*\n` +
+                                                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                                `▸ *.upswgc teks pesan kamu*\n\n` +
+                                                `_Bot akan menampilkan pilihan grup tujuan_`
                                         );
                                 }
 
@@ -4160,10 +4167,22 @@ text += `╰═════════════════╯`;
                                 const swgcEncoded = encodeURIComponent(JSON.stringify(swgcMeta));
                                 const swgcPrefix = m.prefix || '.';
 
+                                // Hitung total stats semua grup
+                                let swgcTotalMember = 0;
+                                let swgcTotalAdmin = 0;
+                                for (const gid of allGids) {
+                                        try {
+                                                const gm = hisoka.groups.read(gid);
+                                                if (!gm?.participants) continue;
+                                                swgcTotalMember += gm.participants.length;
+                                                swgcTotalAdmin += gm.participants.filter(p => p.admin).length;
+                                        } catch (_) {}
+                                }
+
                                 const swgcRows = [
                                         {
                                                 title: '📢 Semua Grup',
-                                                description: `Kirim ke semua ${allGids.length} grup`,
+                                                description: `◆ ${allGids.length} grup  ◆ 👥 ${swgcTotalMember} member  ◆ 🛡️ ${swgcTotalAdmin} admin`,
                                                 id: `${swgcPrefix}sendstatus all ${swgcEncoded}`
                                         }
                                 ];
@@ -4172,13 +4191,42 @@ text += `╰═════════════════╯`;
                                         try {
                                                 const meta = hisoka.groups.read(gid);
                                                 if (!meta) continue;
+                                                const pts = meta.participants || [];
+                                                const mTotal = pts.length;
+                                                const aTotal = pts.filter(p => p.admin).length;
+                                                const aPct = mTotal > 0 ? Math.round((aTotal / mTotal) * 10) : 0;
+                                                const aBar = '█'.repeat(aPct) + '░'.repeat(10 - aPct);
                                                 swgcRows.push({
                                                         title: (meta.subject || gid).substring(0, 24),
-                                                        description: gid,
+                                                        description: `👥 ${mTotal} member  ◆  🛡️ ${aTotal} admin\n[${aBar}]`,
                                                         id: `${swgcPrefix}sendstatus ${gid} ${swgcEncoded}`
                                                 });
                                         } catch (_) {}
                                 }
+
+                                // Tentukan label tipe konten
+                                const swgcTypeLabel = swgcMeta.type === 'image' ? '🖼️ Gambar'
+                                        : swgcMeta.type === 'video' ? '🎥 Video'
+                                        : swgcMeta.type === 'audio' ? '🎵 Audio'
+                                        : '💬 Teks';
+                                const swgcCaptionInfo = swgcMeta.caption ? `\n◆ Caption: _${swgcMeta.caption.substring(0, 40)}${swgcMeta.caption.length > 40 ? '...' : ''}_` : '';
+
+                                const swgcBodyText =
+                                        `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
+                                        `✦ 📢 *KIRIM GROUP STATUS* ✦\n` +
+                                        `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n\n` +
+                                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                        `  📦 *INFO KONTEN*\n` +
+                                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                        `${swgcTypeLabel}${swgcCaptionInfo}\n\n` +
+                                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                        `  🏘️ *STATS SEMUA GRUP*\n` +
+                                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                                        `🗂️ Total Grup   ﹕ ${allGids.length} grup\n` +
+                                        `👥 Total Member ﹕ ${swgcTotalMember} orang\n` +
+                                        `🛡️ Total Admin  ﹕ ${swgcTotalAdmin} orang\n` +
+                                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n\n` +
+                                        `_Pilih grup tujuan di bawah_ 👇`;
 
                                 const swgcMsg = generateWAMessageFromContent(
                                         m.from,
@@ -4187,13 +4235,13 @@ text += `╰═════════════════╯`;
                                                         message: {
                                                                 messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
                                                                 interactiveMessage: {
-                                                                        body: { text: '```📢 Pilih Grup Tujuan Kirim Status ♨️```' },
+                                                                        body: { text: swgcBodyText },
                                                                         nativeFlowMessage: {
                                                                                 buttons: [
                                                                                         {
                                                                                                 name: 'single_select',
                                                                                                 buttonParamsJson: JSON.stringify({
-                                                                                                        title: 'PILIH GRUP',
+                                                                                                        title: '🏘️ PILIH GRUP TUJUAN',
                                                                                                         sections: [
                                                                                                                 { title: '🏘️ Daftar Grup Bot', rows: swgcRows }
                                                                                                         ]
@@ -4239,6 +4287,7 @@ text += `╰═════════════════╯`;
                                 if (!ssTargets.length) return m.reply('❌ Tidak ada grup tujuan.');
 
                                 let ssRawContent;
+                                let ssAudioCaption = null;
                                 if (ssMeta.type === 'text') {
                                         ssRawContent = { text: ssMeta.text };
                                 } else if (ssMeta.type === 'image') {
@@ -4249,6 +4298,8 @@ text += `╰═════════════════╯`;
                                         if (ssMeta.caption) ssRawContent.caption = ssMeta.caption;
                                 } else if (ssMeta.type === 'audio') {
                                         ssRawContent = { audio: { url: ssMeta.file }, mimetype: ssMeta.mime || 'audio/ogg; codecs=opus', ptt: false };
+                                        // Caption audio dikirim terpisah sebagai teks status
+                                        if (ssMeta.caption) ssAudioCaption = ssMeta.caption;
                                 } else {
                                         return m.reply('❌ Tipe konten tidak dikenali.');
                                 }
@@ -4272,6 +4323,26 @@ text += `╰═════════════════╯`;
                                                         }
                                                 }, {});
                                                 await hisoka.relayMessage(gid, ssMsg.message, { messageId: ssMsg.key.id });
+
+                                                // Kirim caption audio sebagai status teks terpisah
+                                                if (ssAudioCaption) {
+                                                        await new Promise(r => setTimeout(r, 800));
+                                                        const ssCaptionInside = await generateWAMessageContent({ text: ssAudioCaption }, {
+                                                                upload: hisoka.waUploadToServer
+                                                        });
+                                                        const ssCaptionSecret = crypto.randomBytes(32);
+                                                        const ssCaptionMsg = generateWAMessageFromContent(gid, {
+                                                                messageContextInfo: { messageSecret: ssCaptionSecret },
+                                                                groupStatusMessageV2: {
+                                                                        message: {
+                                                                                ...ssCaptionInside,
+                                                                                messageContextInfo: { messageSecret: ssCaptionSecret }
+                                                                        }
+                                                                }
+                                                        }, {});
+                                                        await hisoka.relayMessage(gid, ssCaptionMsg.message, { messageId: ssCaptionMsg.key.id });
+                                                }
+
                                                 ssOk++;
                                                 if (ssTargets.length > 1) await new Promise(r => setTimeout(r, 1000));
                                         } catch (e) {

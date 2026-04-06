@@ -7,6 +7,16 @@ vite.config.ts.*
 .upm
 package-lock.json
 tmp/
+.env
+.replit
+replit.md
+.local
+.agents
+.cache
+.config
+attached_assets
+data
+index.d.ts
 
 # Sessions — folder ada tapi isinya dikosongkan
 sessions/**

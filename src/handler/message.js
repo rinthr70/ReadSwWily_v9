@@ -4259,6 +4259,14 @@ text += `╰═════════════════╯`;
                                         `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n\n` +
                                         `_Pilih grup tujuan di bawah_ 👇`;
 
+                                // Bangun contextInfo untuk reply ke pesan .upswgc
+                                const swgcQuotedCtx = {
+                                        stanzaId: m.key.id,
+                                        participant: m.sender || m.key?.participant || m.key?.remoteJid,
+                                        quotedMessage: m.raw || m.message,
+                                        remoteJid: m.from,
+                                };
+
                                 const swgcMsg = generateWAMessageFromContent(
                                         m.from,
                                         {
@@ -4266,6 +4274,7 @@ text += `╰═════════════════╯`;
                                                         message: {
                                                                 messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
                                                                 interactiveMessage: {
+                                                                        contextInfo: swgcQuotedCtx,
                                                                         body: { text: swgcBodyText },
                                                                         nativeFlowMessage: {
                                                                                 buttons: [

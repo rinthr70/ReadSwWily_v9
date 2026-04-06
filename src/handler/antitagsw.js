@@ -220,40 +220,20 @@ export default async function handleAntiTagSW(message, hisoka) {
                 areJidsSameUser(p.phoneNumber || p.id, botJid)
             );
             if (!botParticipant?.admin) {
-                console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan.\x1b[39m');
-                // Bot tidak admin: tetap kirim peringatan tapi skip hapus & kick
-                const [ncLabel, ncEmoji] = detectStatusContentType(message);
-                const ncNow = new Date();
-                const ncTime = ncNow.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const ncDate = ncNow.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: '2-digit', year: 'numeric' });
-                const ncMsg =
-                    `╭─────────────────────────────╮\n` +
-                    `│   ⚠️ *ANTI-TAG STATUS* ⚠️   │\n` +
-                    `╰─────────────────────────────╯\n` +
-                    `\n` +
-                    `👤 *Pelanggar:* @${senderNumber}\n` +
-                    `📅 *Waktu:* ${ncTime} • ${ncDate}\n` +
-                    `${ncEmoji} *Tipe Konten:* ${ncLabel}\n` +
-                    `\n` +
-                    `┌─────────────────────────────\n` +
-                    `│ 🚫 Dilarang mentag grup\n` +
-                    `│    lewat *STATUS WhatsApp!*\n` +
-                    `│ ⚠️  Bot bukan admin, pesan\n` +
-                    `│    tidak bisa dihapus/kick.\n` +
-                    `└─────────────────────────────\n` +
-                    `\n` +
-                    `_Jadikan bot sebagai admin agar bisa hapus & kick!_`;
-                try {
-                    await hisoka.sendMessage(remoteJid, {
-                        text: ncMsg,
-                        contextInfo: { mentionedJid: [senderJid] }
-                    }, { quoted: message });
-                } catch (_) {}
-                return;
+                console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan (tanpa hapus/kick).\x1b[39m');
             }
         }
 
-        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | Grup: ${remoteJid}\x1b[39m`);
+        const isAdmin = (() => {
+            try {
+                const bp = groupMeta?.participants?.find(p =>
+                    areJidsSameUser(p.phoneNumber || p.id, botJid)
+                );
+                return !!bp?.admin;
+            } catch (_) { return false; }
+        })();
+
+        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | Admin: ${isAdmin}\x1b[39m`);
 
         // Update & simpan warning dulu
         if (!data.warnings[remoteJid]) data.warnings[remoteJid] = {};
@@ -282,6 +262,10 @@ export default async function handleAntiTagSW(message, hisoka) {
             delete data.warnings[remoteJid][senderJid];
             saveData(data);
 
+            const kickStatusLine = isAdmin
+                ? `💥 *Status:* Telah di-*KICK* dari grup!`
+                : `⚠️ *Bot bukan admin* — tidak bisa kick!\n💡 Jadikan bot admin agar bisa kick otomatis.`;
+
             const kickMsg =
                 `╭─────────────────────────────╮\n` +
                 `│   ⛔ *ANTI-TAG STATUS* ⛔    │\n` +
@@ -297,49 +281,52 @@ export default async function handleAntiTagSW(message, hisoka) {
                 `└─────────────────────────────\n` +
                 `\n` +
                 `🚫 *Peringatan:* ${maxWarnings}/${maxWarnings}\n` +
-                `💥 *Status:* Telah di-*KICK* dari grup!\n` +
+                `${kickStatusLine}\n` +
                 `\n` +
                 `_Jangan ulangi perbuatan ini di grup lain!_`;
 
-            // Reply dulu ke pesan pelanggar, baru hapus
             await hisoka.sendMessage(remoteJid, {
                 text: kickMsg,
                 contextInfo: { mentionedJid: [senderJid] }
             }, { quoted: message });
 
-            // Tandai ID agar anti-delete tidak notif "PESAN DIHAPUS"
-            global.__antiTagSWDeletedIds.add(message.key.id);
-            setTimeout(() => global.__antiTagSWDeletedIds.delete(message.key.id), 10000);
+            if (isAdmin) {
+                // Tandai ID agar anti-delete tidak notif "PESAN DIHAPUS"
+                global.__antiTagSWDeletedIds.add(message.key.id);
+                setTimeout(() => global.__antiTagSWDeletedIds.delete(message.key.id), 10000);
 
-            // Hapus pesan tag status
-            try {
-                await hisoka.sendMessage(remoteJid, {
-                    delete: {
-                        remoteJid: remoteJid,
-                        fromMe: false,
-                        id: message.key.id,
-                        participant: message.key.participant
-                    }
-                });
-            } catch (delErr) {
-                console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
-            }
+                // Hapus pesan tag status
+                try {
+                    await hisoka.sendMessage(remoteJid, {
+                        delete: {
+                            remoteJid: remoteJid,
+                            fromMe: false,
+                            id: message.key.id,
+                            participant: message.key.participant
+                        }
+                    });
+                } catch (delErr) {
+                    console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
+                }
 
-            try {
-                await hisoka.groupParticipantsUpdate(remoteJid, [senderJid], 'remove');
-                console.log(`\x1b[31m[AntiTagSW] ✓ Kicked ${senderNumber} dari ${remoteJid}\x1b[39m`);
-            } catch (kickErr) {
-                console.error('\x1b[31m[AntiTagSW] Gagal kick:\x1b[39m', kickErr.message);
-                await hisoka.sendMessage(remoteJid, {
-                    text: `❌ Gagal kick @${senderNumber}. Pastikan bot adalah admin grup.`,
-                    contextInfo: { mentionedJid: [senderJid] }
-                });
+                try {
+                    await hisoka.groupParticipantsUpdate(remoteJid, [senderJid], 'remove');
+                    console.log(`\x1b[31m[AntiTagSW] ✓ Kicked ${senderNumber} dari ${remoteJid}\x1b[39m`);
+                } catch (kickErr) {
+                    console.error('\x1b[31m[AntiTagSW] Gagal kick:\x1b[39m', kickErr.message);
+                    await hisoka.sendMessage(remoteJid, {
+                        text: `❌ Gagal kick @${senderNumber}. Pastikan bot adalah admin grup.`,
+                        contextInfo: { mentionedJid: [senderJid] }
+                    });
+                }
             }
         } else {
             // Isi bar peringatan
             const filled = '▰'.repeat(newWarn);
             const empty = '▱'.repeat(maxWarnings - newWarn);
             const bar = filled + empty;
+
+            const deleteInfo = isAdmin ? `│ 🗑️  Pesan telah dihapus.\n` : `│ ⚠️  Bot bukan admin, pesan\n│    tidak bisa dihapus.\n`;
 
             const warnMsg =
                 `╭─────────────────────────────╮\n` +
@@ -353,38 +340,39 @@ export default async function handleAntiTagSW(message, hisoka) {
                 `┌─────────────────────────────\n` +
                 `│ 🚫 Dilarang mentag grup\n` +
                 `│    lewat *STATUS WhatsApp!*\n` +
-                `│ 🗑️  Pesan telah dihapus.\n` +
+                `${deleteInfo}` +
                 `└─────────────────────────────\n` +
                 `\n` +
                 `📊 *Peringatan:* ${bar} ${newWarn}/${maxWarnings}\n` +
                 `\n` +
                 `_${newWarn >= maxWarnings - 1 ? '⚠️ Peringatan berikutnya = KICK!' : `Sisa ${maxWarnings - newWarn}x lagi sebelum di-kick!`}_`;
 
-            // Reply dulu ke pesan pelanggar, baru hapus
             await hisoka.sendMessage(remoteJid, {
                 text: warnMsg,
                 contextInfo: { mentionedJid: [senderJid] }
             }, { quoted: message });
 
-            // Tandai ID agar anti-delete tidak notif "PESAN DIHAPUS"
-            global.__antiTagSWDeletedIds.add(message.key.id);
-            setTimeout(() => global.__antiTagSWDeletedIds.delete(message.key.id), 10000);
+            if (isAdmin) {
+                // Tandai ID agar anti-delete tidak notif "PESAN DIHAPUS"
+                global.__antiTagSWDeletedIds.add(message.key.id);
+                setTimeout(() => global.__antiTagSWDeletedIds.delete(message.key.id), 10000);
 
-            // Hapus pesan tag status
-            try {
-                await hisoka.sendMessage(remoteJid, {
-                    delete: {
-                        remoteJid: remoteJid,
-                        fromMe: false,
-                        id: message.key.id,
-                        participant: message.key.participant
-                    }
-                });
-            } catch (delErr) {
-                console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
+                // Hapus pesan tag status
+                try {
+                    await hisoka.sendMessage(remoteJid, {
+                        delete: {
+                            remoteJid: remoteJid,
+                            fromMe: false,
+                            id: message.key.id,
+                            participant: message.key.participant
+                        }
+                    });
+                } catch (delErr) {
+                    console.error('\x1b[31m[AntiTagSW] Gagal hapus pesan:\x1b[39m', delErr.message);
+                }
             }
 
-            console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber}\x1b[39m`);
+            console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber} | Admin: ${isAdmin}\x1b[39m`);
         }
     } catch (err) {
         console.error('\x1b[31m[AntiTagSW] Error:\x1b[39m', err.message);

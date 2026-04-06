@@ -1,55 +1,142 @@
-🤖 *Update Script — Jadibot QR Fix & Realtime Connection*
-📅 Sabtu, 4 April 2026
+🤖 *Update Script — AntiTagSW Upgrade, UPSWGC Upgrade & Fix YT*
+📅 Senin, 6 April 2026
 
 📋 *CHANGELOG WILY-BOT*
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ *FITUR BARU / PENINGKATAN*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+> 📌 *AntiTagSW — Deteksi Diperluas (Caption & Reply)*
+└ Sebelumnya: hanya mendeteksi tag grup via Status WA
+  (groupStatusMentionMessage, groupStatusMessageV2,
+  groupMentionedMessage)
+└ Sekarang: juga mendeteksi tag grup lewat:
+  ▸ Caption media (gambar/video/audio/dokumen/teks)
+    yang mengandung contextInfo.groupJid atau
+    contextInfo.mentionedJid yang berisi @g.us
+  ▸ Reply/quoted ke pesan status tag
+└ Setiap peringatan kini tampilkan metode yang dipakai:
+  "Status WA" atau "Caption/Reply"
+
+> 📌 *AntiTagSW — Informasi Grup di Peringatan*
+└ Setiap pesan peringatan kini memuat Statistik Grup:
+  ▸ 👥 Total Member
+  ▸ 🛡️ Total Admin
+  ▸ 🙋 Member Biasa
+  ▸ 📈 Rasio Admin (%) + grafik batang [████░░░░░░]
+└ Data diambil realtime dari groupMetadata
+
+> 📌 *AntiTagSW — Tampilan Pesan Diperbarui*
+└ Header bold: ⬛⬛⬛ ✦ ⚠️ ANTI-TAG STATUS ⚠️ ✦ ⬛⬛⬛
+└ Pemisah seksi: ◈━━━━━━━━━━━━━━━━━━━━━━━◈
+└ Progress bar warning pakai simbol keren: ◆◆◇ 2/3
+└ Struktur 3 blok: Info Pelanggar → Statistik Grup
+  → Status Peringatan
+└ Pesan Admin juga dapat info statistik grup
+
+> 📌 *UPSWGC — Kirim Langsung via Caption*
+└ Sebelumnya: hanya bisa lewat reply pesan lain
+└ Sekarang juga bisa:
+  ▸ Kirim gambar + caption ".upswgc [teks]" → langsung
+  ▸ Kirim video + caption ".upswgc [teks]" → langsung
+  ▸ Kirim audio + caption ".upswgc [teks]" → langsung
+└ Urutan prioritas:
+  1. Media di pesan saat ini (caption langsung)
+  2. Reply ke pesan lain yang berisi media
+  3. Teks saja tanpa media
+
+> 📌 *UPSWGC — Audio + Caption Diizinkan*
+└ Sebelumnya: audio + caption diblok dengan error
+  "❌ Audio tidak boleh disertai caption"
+└ Sekarang: audio bisa disertai caption
+└ Caption audio dikirim sebagai status teks terpisah
+  ke grup (karena WA tidak support caption native
+  pada audioMessage), audio terkirim dulu lalu teks
+  menyusul dengan delay 800ms
+
+> 📌 *UPSWGC — Button Pilih Grup Berisi Info Grup*
+└ Setiap baris grup di button selection kini tampilkan:
+  ▸ 👥 X member  ◆  🛡️ Y admin
+  ▸ Grafik rasio admin [████░░░░░░]
+└ Baris "Semua Grup" tampilkan total gabungan:
+  ◆ X grup  ◆ 👥 Y member  ◆ 🛡️ Z admin
+
+> 📌 *UPSWGC — Button Reply ke Pesan .upswgc*
+└ Sebelumnya: button muncul sebagai pesan baru
+  (tidak ada reply/quote ke pesan asal)
+└ Sekarang: button muncul sebagai reply ke pesan
+  .upswgc yang dikirim pengguna
+└ Teknis: ganti dari generateWAMessageFromContent
+  + relayMessage ke m.reply({ interactiveMessage:
+  { contextInfo: { stanzaId, participant,
+  quotedMessage } } }) — pola sama seperti Jadibot
+
+> 📌 *UPSWGC — Tampilan Button Body Diperbarui*
+└ Header: ⬛⬛⬛ ✦ 📢 KIRIM GROUP STATUS ✦ ⬛⬛⬛
+└ Seksi Info Konten (tipe + preview caption)
+└ Seksi Stats Semua Grup (total grup/member/admin)
+└ Pemisah: ◈━━━━━━━━━━━━━━━━━━━━━━━◈
+└ Pesan bantuan (.upswgc kosong) tampilkan 3 cara:
+  Cara 1 (Langsung), Cara 2 (Reply), Cara 3 (Teks)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *PERBAIKAN (BUG FIX)*
 
-> 📌 *Jadibot QR — Forced Logout Setelah Scan*
-└ Sebelumnya: user scan QR berhasil tapi langsung
-  dipaksa logout / sesi tiba-tiba hilang
-└ Penyebab 1: saat reconnect singkat, kode lama memanggil
-  startJadibot (mode pairing code) bukan startJadibotQR
-└ Penyebab 2: creds.json belum sempat tersimpan saat
-  putus sesaat setelah scan → isSessionValid() return
-  false → sesi dianggap tidak ada → tidak reconnect
-└ Fix: tambah flag hasConnected yang dicatat saat
-  connection === 'open' pertama kali
-└ Fix: selama hasConnected = true, reconnect selalu
-  pakai startJadibotQR — tidak peduli status creds.json
-└ Hasil: QR scan → connect → putus sesaat → reconnect
-  otomatis via QR → terhubung kembali ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-> 📌 *Jadibot QR — Reconnect Pakai Fungsi yang Salah*
-└ Sebelumnya: setelah koneksi QR putus (network glitch),
-  reconnect memanggil startJadibot (pairing code mode)
-└ Fix: reconnect sekarang konsisten memanggil
-  startJadibotQR dengan sendReply & sendImage yang sama
-└ Semua parameter diteruskan dengan benar ke instance baru
+> 📌 *YTMP3 / YTMP4 / Play — Binary yt-dlp Hilang*
+└ Masalah: binary yt-dlp tidak ada di folder tmp/
+└ Akibat: semua command .ytmp3 .ytmp4 .play error
+  saat mencoba menjalankan file yang tidak ada
+└ Fix: download ulang binary yt-dlp v2026.03.17
+  (Linux x86_64) ke tmp/yt-dlp dan chmod +x
 
-✨ *FITUR / PERILAKU YANG DIKONFIRMASI*
+> 📌 *YTMP3 / YTMP4 / Play — JavaScript Runtime Error*
+└ Masalah: yt-dlp v2026 butuh JS runtime untuk
+  ekstraksi YouTube, tapi tidak ada yang dikonfigurasi
+└ Error: "No supported JavaScript runtime could be
+  found. Only deno is enabled by default..."
+└ Fix: tambah flag --js-runtimes node ke semua
+  perintah yt-dlp (5 tempat: play download, ytmp3
+  meta+download, ytmp4 meta+download)
+└ Node.js v20 sudah tersedia di environment (/nix/...)
+└ Tes berhasil: fetch meta YouTube return judul,
+  durasi, channel dengan benar
 
-> 📌 *AutoReadStory — Masing-Masing Bot Independen*
-└ Bot utama & jadibot masing-masing ngereaction story
-  dari kontak WhatsApp-nya sendiri secara terpisah
-└ Tidak ada campur aduk antar akun — WA server sendiri
-  yang filter: hanya kirim notif story ke kontak yang
-  menyimpan nomor si pembuat story
-└ Reaction dikirim dari akun masing-masing bot
+> 📌 *YTMP3 / YTMP4 — Auto-Download yt-dlp*
+└ Tambah fungsi ensureYtdlp() yang dipanggil sebelum
+  setiap perintah download
+└ Jika binary tidak ada, otomatis download dari
+  GitHub releases (yt-dlp/yt-dlp) + chmod +x
+└ Mencegah error berulang saat server restart atau
+  binary terhapus oleh cleaner
 
-> 📌 *AutoReadStory — Channel Post di Status*
-└ Kalau kontak share postingan channel WA ke story
-  (video, gambar, audio, dll), bot tetap baca & react
-└ Tidak ada filter berdasarkan asal konten — selama
-  remoteJid === status@broadcast maka diproses
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ⚙️ *CATATAN TEKNIS*
 
-└ File diubah: src/helper/jadibot.js
-└ Tambah flag hasConnected di scope startJadibotQR
-└ Logika reconnect QR: hasConnected || isSessionValid()
-  → selalu reconnect via startJadibotQR
-└ Tidak ada perubahan pada pairing code flow
-└ Jumlah command tetap: 72 command
+└ File diubah: src/handler/antitagsw.js
+  → Tambah deteksi caption & reply
+  → Tambah fungsi detectCaptionGroupTag()
+  → Tambah fungsi buildGroupStats()
+  → Redesign semua template pesan peringatan
 
-🤖 *Wily-Bot* — Updated 4 Apr 2026
+└ File diubah: src/handler/message.js
+  → upswgc: tambah PRIORITAS 1 (media langsung)
+  → upswgc: hapus larangan audio + caption
+  → upswgc: ubah swgcRows dengan info member/admin
+  → upswgc: ganti ke m.reply({ interactiveMessage })
+  → sendstatus: tambah ssAudioCaption handling
+  → ensureYtdlp(): fungsi auto-download yt-dlp
+  → Semua exec yt-dlp ditambah --js-runtimes node
+
+└ Jumlah command: 80 command (tidak berubah)
+└ Semua perubahan hot-reload tanpa restart bot ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤖 *Wily-Bot* — Updated 6 Apr 2026

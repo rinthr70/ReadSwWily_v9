@@ -227,7 +227,11 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
   cleanStaleSessionFiles(sessionDir)
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir)
-  const { version } = await fetchLatestBaileysVersion()
+  const _vr1 = global.cachedBaileysVersion || await (async () => {
+    try { return await Promise.race([fetchLatestBaileysVersion(), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 8000))]); }
+    catch { return { version: [2, 3000, 1033105955] }; }
+  })();
+  const { version } = _vr1;
 
   const sock = makeWASocket({
     version,
@@ -464,7 +468,11 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
   cleanStaleSessionFiles(sessionDir)
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir)
-  const { version } = await fetchLatestBaileysVersion()
+  const _vr2 = global.cachedBaileysVersion || await (async () => {
+    try { return await Promise.race([fetchLatestBaileysVersion(), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 8000))]); }
+    catch { return { version: [2, 3000, 1033105955] }; }
+  })();
+  const { version } = _vr2;
 
   const sock = makeWASocket({
     version,

@@ -149,6 +149,29 @@ function isJadibotSessionValid(number) {
   return fs.existsSync(path.join(dir, 'creds.json'));
 }
 
+/* ================= VERSION FETCH WITH TIMEOUT ================= */
+const FALLBACK_VERSION = [2, 3000, 1033105955];
+global.cachedBaileysVersion = null;
+
+async function fetchVersionWithTimeout(timeoutMs = 8000) {
+  if (global.cachedBaileysVersion) return global.cachedBaileysVersion;
+  try {
+    const result = await Promise.race([
+      fetchLatestBaileysVersion(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Version fetch timeout')), timeoutMs)
+      )
+    ]);
+    global.cachedBaileysVersion = result;
+    return result;
+  } catch (e) {
+    console.warn(`\x1b[33m[Baileys] fetchLatestBaileysVersion timeout/gagal, pakai versi fallback\x1b[39m`);
+    const fallback = { version: FALLBACK_VERSION, isLatest: true };
+    global.cachedBaileysVersion = fallback;
+    return fallback;
+  }
+}
+
 if (!process.env.BOT_SESSION_NAME) process.env.BOT_SESSION_NAME = 'default';
 if (!process.env.BOT_NUMBER_OWNER) process.env.BOT_NUMBER_OWNER = '1';
 
@@ -335,7 +358,7 @@ async function main() {
         cleanStaleSessionFiles(sessionDir)
 
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-        const { version, isLatest } = await fetchLatestBaileysVersion();
+        const { version, isLatest } = await fetchVersionWithTimeout();
 
         console.info(`\x1b[32m[Baileys] v${version.join('.')}${isLatest ? '' : ' (update tersedia)'}\x1b[39m`);
 

@@ -481,6 +481,16 @@ async function main() {
                         hisoka.loadedCommands = commands;
                         console.info(`\x1b[32m[Handler] ✅ Loaded ${commands.length} commands\x1b[39m`);
 
+                        try {
+                                const allGroups = Object.values(await hisoka.groupFetchAllParticipating());
+                                allGroups.forEach(g => groups.write(g.id, g));
+                                if (allGroups.length > 0) {
+                                        console.info(`\x1b[32m[Groups] ✅ Loaded ${allGroups.length} groups\x1b[39m`);
+                                }
+                        } catch (err) {
+                                console.error('\x1b[31m[Groups] Gagal fetch grup:\x1b[39m', err?.message || err);
+                        }
+
                         const startAutoOnline = () => {
                         const config = loadConfig();
                         const autoOnline = config.autoOnline || {};

@@ -110,32 +110,43 @@
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-> 📌 *YTMP3 / YTMP4 / Play — Binary yt-dlp Hilang*
-└ Masalah: binary yt-dlp tidak ada di folder tmp/
-└ Akibat: semua command .ytmp3 .ytmp4 .play error
-  saat mencoba menjalankan file yang tidak ada
-└ Fix: download ulang binary yt-dlp v2026.03.17
-  (Linux x86_64) ke tmp/yt-dlp dan chmod +x
+> 📌 *YTMP3 / YTMP4 / Play — Binary yt-dlp Tidak Ada*
+└ Masalah: binary tmp/yt-dlp tidak ada di server
+└ Akibat: .ytmp3 .ytmp4 .play langsung error saat
+  mencoba eksekusi file yang tidak ditemukan
+└ Fix manual: download binary yt-dlp Linux x86_64
+  dari GitHub releases ke tmp/yt-dlp, lalu chmod 755
 
 > 📌 *YTMP3 / YTMP4 / Play — JavaScript Runtime Error*
-└ Masalah: yt-dlp v2026 butuh JS runtime untuk
-  ekstraksi YouTube, tapi tidak ada yang dikonfigurasi
+└ Masalah: yt-dlp versi baru butuh JS runtime untuk
+  bypass enkripsi YouTube (nsig), default hanya Deno
 └ Error: "No supported JavaScript runtime could be
-  found. Only deno is enabled by default..."
-└ Fix: tambah flag --js-runtimes node ke semua
-  perintah yt-dlp (5 tempat: play download, ytmp3
-  meta+download, ytmp4 meta+download)
-└ Node.js v20 sudah tersedia di environment (/nix/...)
-└ Tes berhasil: fetch meta YouTube return judul,
-  durasi, channel dengan benar
+  found. Only deno is enabled by default. Please
+  install or enable a supported JavaScript runtime"
+└ Fix: tambah flag --js-runtimes node di 5 titik exec:
+  ▸ .play     → 1x (download mp3)
+  ▸ .ytmp3    → 2x (dump-json meta + download mp3)
+  ▸ .ytmp4    → 2x (dump-json meta + download mp4)
+└ Node.js v20 tersedia di /nix/store/... (Replit env)
+└ Perintah download lengkap:
+  ▸ MP3 : --no-playlist -x --audio-format mp3
+          --audio-quality 5
+  ▸ MP4 : --no-playlist -f bestvideo[height<=360]
+          +bestaudio --merge-output-format mp4
 
-> 📌 *YTMP3 / YTMP4 — Auto-Download yt-dlp*
-└ Tambah fungsi ensureYtdlp() yang dipanggil sebelum
-  setiap perintah download
-└ Jika binary tidak ada, otomatis download dari
-  GitHub releases (yt-dlp/yt-dlp) + chmod +x
-└ Mencegah error berulang saat server restart atau
-  binary terhapus oleh cleaner
+> 📌 *YTMP3 / YTMP4 / Play — Fungsi ensureYtdlp()*
+└ Tambah fungsi ensureYtdlp() di awal message.js
+└ Dipanggil sebelum setiap perintah yt-dlp (.play,
+  .ytmp3, .ytmp4)
+└ Cara kerja:
+  ▸ Cek apakah tmp/yt-dlp sudah ada
+  ▸ Jika ada → langsung return path binary
+  ▸ Jika tidak ada → download otomatis via curl -L
+    dari github.com/yt-dlp/yt-dlp releases/latest
+    (binary: yt-dlp_linux) + chmod 755
+└ Timeout download: 120 detik
+└ Mencegah error berulang saat binary hilang atau
+  terhapus oleh cleaner tmp dir
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

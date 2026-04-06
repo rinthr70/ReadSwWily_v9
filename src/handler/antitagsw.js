@@ -1,7 +1,8 @@
 /**
  * ═══════════════════════════════════════════════════════════════
  *  Anti-Tag Semua Warga (AntiTagSW) Handler
- *  Fitur untuk mencegah anggota mentag grup lewat status WhatsApp
+ *  Fitur untuk mencegah anggota mentag grup lewat status WhatsApp,
+ *  caption media (gambar/video/audio), dan pesan reply.
  *  Referensi: github.com/hitlabmodv2/MD-FURINA
  * ═══════════════════════════════════════════════════════════════
  */
@@ -22,19 +23,19 @@ if (!global.__antiTagSWDeletedIds) global.__antiTagSWDeletedIds = new Set();
 
 // Mapping tipe konten status → label + emoji
 const CONTENT_TYPE_MAP = {
-    imageMessage:         ['Gambar', '🖼️'],
-    videoMessage:         ['Video', '🎥'],
-    audioMessage:         ['Audio', '🎵'],
-    ptvMessage:           ['Video Pesan', '📹'],
-    stickerMessage:       ['Stiker', '🎨'],
-    documentMessage:      ['Dokumen', '📄'],
-    documentWithCaptionMessage: ['Dokumen', '📄'],
-    conversation:         ['Teks', '💬'],
-    extendedTextMessage:  ['Teks', '💬'],
-    reactionMessage:      ['Reaksi', '🔥'],
-    pollCreationMessage:  ['Polling', '📊'],
-    pollCreationMessageV2: ['Polling', '📊'],
-    pollCreationMessageV3: ['Polling', '📊'],
+    imageMessage:         ['Gambar 🖼️', '🖼️'],
+    videoMessage:         ['Video 🎥', '🎥'],
+    audioMessage:         ['Audio 🎵', '🎵'],
+    ptvMessage:           ['Video Pesan 📹', '📹'],
+    stickerMessage:       ['Stiker 🎨', '🎨'],
+    documentMessage:      ['Dokumen 📄', '📄'],
+    documentWithCaptionMessage: ['Dokumen 📄', '📄'],
+    conversation:         ['Teks 💬', '💬'],
+    extendedTextMessage:  ['Teks 💬', '💬'],
+    reactionMessage:      ['Reaksi 🔥', '🔥'],
+    pollCreationMessage:  ['Polling 📊', '📊'],
+    pollCreationMessageV2: ['Polling 📊', '📊'],
+    pollCreationMessageV3: ['Polling 📊', '📊'],
 };
 
 function detectStatusContentType(message) {
@@ -56,7 +57,7 @@ function detectStatusContentType(message) {
         const innerType = getContentType(inner);
         if (innerType && CONTENT_TYPE_MAP[innerType]) return CONTENT_TYPE_MAP[innerType];
     } catch (_) {}
-    return ['Status', '📲'];
+    return ['Status 📲', '📲'];
 }
 
 // Tipe pesan yang terdeteksi sebagai "tag grup lewat status"
@@ -65,6 +66,52 @@ const ANTITAG_MSG_TYPES = [
     'groupStatusMessageV2',
     'groupMentionedMessage',
 ];
+
+// Tipe pesan media yang bisa membawa caption dengan tag grup
+const MEDIA_CAPTION_TYPES = [
+    'imageMessage',
+    'videoMessage',
+    'audioMessage',
+    'documentMessage',
+    'documentWithCaptionMessage',
+    'extendedTextMessage',
+    'conversation',
+];
+
+/**
+ * Deteksi apakah pesan mengandung tag grup lewat caption / reply
+ * Cek contextInfo.groupJid atau contextInfo.mentionedJid yang berisi @g.us
+ */
+function detectCaptionGroupTag(message) {
+    try {
+        const msg = message?.message || {};
+        const msgType = getContentType(msg);
+        if (!msgType) return false;
+
+        if (!MEDIA_CAPTION_TYPES.includes(msgType)) return false;
+
+        const inner = msg[msgType] || {};
+        const ctx = inner?.contextInfo || {};
+
+        // Cek groupJid (tag grup via caption)
+        if (ctx?.groupJid && isJidGroup(ctx.groupJid)) return true;
+
+        // Cek mentionedJid yang berisi JID grup (@g.us)
+        if (Array.isArray(ctx?.mentionedJid)) {
+            if (ctx.mentionedJid.some(j => isJidGroup(j))) return true;
+        }
+
+        // Cek quoted message yang merupakan status tag (reply ke status tag)
+        const quotedMsg = ctx?.quotedMessage || {};
+        for (const t of ANTITAG_MSG_TYPES) {
+            if (quotedMsg[t]) return true;
+        }
+
+        return false;
+    } catch (_) {
+        return false;
+    }
+}
 
 function loadConfig() {
     try {
@@ -119,6 +166,35 @@ function isOwnerJid(senderJid, senderNumber, config) {
         owners.some(o => senderNumber === o);
 }
 
+/**
+ * Bangun info statistik grup dengan simbol keren
+ */
+function buildGroupStats(groupMeta, newWarn, maxWarnings) {
+    const participants = groupMeta?.participants || [];
+    const totalMembers = participants.length;
+    const totalAdmins = participants.filter(p => p.admin).length;
+    const totalMembers_ = totalMembers - totalAdmins;
+
+    // Warning bar dengan simbol keren
+    const filled = '◆'.repeat(newWarn);
+    const empty = '◇'.repeat(maxWarnings - newWarn);
+    const warnBar = filled + empty;
+
+    // Grafik member sederhana
+    const adminPct = totalMembers > 0 ? Math.round((totalAdmins / totalMembers) * 10) : 0;
+    const memberPct = 10 - adminPct;
+    const adminBar = '█'.repeat(adminPct) + '░'.repeat(memberPct);
+
+    return {
+        totalMembers,
+        totalAdmins,
+        totalMembers_,
+        warnBar,
+        adminBar,
+        adminPct: totalMembers > 0 ? Math.round((totalAdmins / totalMembers) * 100) : 0,
+    };
+}
+
 export default async function handleAntiTagSW(message, hisoka) {
     try {
         if (!message?.key?.remoteJid) return;
@@ -129,12 +205,15 @@ export default async function handleAntiTagSW(message, hisoka) {
         if (!isJidGroup(remoteJid)) return;
         if (message.key?.fromMe) return;
 
-        // Cek tipe pesan — hanya proses tag status
+        // Cek tipe pesan
         const msgType = getContentType(message.message);
         if (!msgType) return;
 
         const isTagStatus = ANTITAG_MSG_TYPES.includes(msgType);
-        if (!isTagStatus) return;
+        const isCaptionTag = !isTagStatus && detectCaptionGroupTag(message);
+
+        // Hanya proses jika salah satu terdeteksi
+        if (!isTagStatus && !isCaptionTag) return;
 
         // Cek config global
         const config = loadConfig();
@@ -198,42 +277,62 @@ export default async function handleAntiTagSW(message, hisoka) {
                 isAdmin = !!botP?.admin;
             }
         } else {
-            // Tetap load groupMeta untuk cek sender admin
-            groupMeta = hisoka.groups?.read(remoteJid) || null;
+            // Tetap load groupMeta untuk cek sender admin & stats
+            try {
+                groupMeta = await hisoka.groupMetadata(remoteJid).catch(() => null)
+                    || hisoka.groups?.read(remoteJid)
+                    || null;
+            } catch (_) {
+                groupMeta = hisoka.groups?.read(remoteJid) || null;
+            }
         }
+
+        // Deteksi tipe konten
+        const [contentLabel, contentEmoji] = detectStatusContentType(message);
+        const tagMethod = isTagStatus ? 'Status WA' : isCaptionTag ? 'Caption/Reply' : 'Tidak Diketahui';
 
         if (groupMeta?.participants) {
             const senderParticipant = findParticipant(groupMeta.participants, senderNumberClean);
             if (senderParticipant?.admin) {
                 console.log(`\x1b[33m[AntiTagSW] Admin tag SW: ${senderNumber} — balas + reaksi\x1b[39m`);
                 try {
-                    const [aContentLabel, aContentEmoji] = detectStatusContentType(message);
-                    const aNow = new Date();
-                    const aTimeStr = aNow.toLocaleTimeString('id-ID', {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('id-ID', {
                         timeZone: 'Asia/Jakarta',
                         hour: '2-digit', minute: '2-digit', second: '2-digit'
                     });
-                    const aDateStr = aNow.toLocaleDateString('id-ID', {
+                    const dateStr = now.toLocaleDateString('id-ID', {
                         timeZone: 'Asia/Jakarta',
                         day: '2-digit', month: '2-digit', year: 'numeric'
                     });
 
+                    const maxWarnings = antiTagSWConfig.maxWarnings ?? 3;
+                    const stats = buildGroupStats(groupMeta, 0, maxWarnings);
+
                     const adminMsg =
-                        `╭─────────────────────────────╮\n` +
-                        `│   👑 *TAG STATUS ADMIN* 👑   │\n` +
-                        `╰─────────────────────────────╯\n` +
+                        `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
+                        `✦ 👑 *TAG STATUS ADMIN* 👑 ✦\n` +
+                        `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
                         `\n` +
-                        `👤 *Admin:* @${senderNumber}\n` +
-                        `📅 *Waktu:* ${aTimeStr} • ${aDateStr}\n` +
-                        `${aContentEmoji} *Tipe Konten:* ${aContentLabel}\n` +
+                        `👤 *Admin* ﹕@${senderNumber}\n` +
+                        `🕐 *Waktu* ﹕${timeStr} • ${dateStr}\n` +
+                        `${contentEmoji} *Konten* ﹕${contentLabel}\n` +
+                        `📡 *Metode* ﹕${tagMethod}\n` +
                         `\n` +
-                        `┌─────────────────────────────\n` +
-                        `│ ✅ Admin diizinkan mentag\n` +
-                        `│    grup lewat STATUS WA.\n` +
-                        `│ 🔔 Anggota telah diberitahu!\n` +
-                        `└─────────────────────────────\n` +
+                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                        `  📊 *STATISTIK GRUP*\n` +
+                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                        `👥 *Total Member*  ﹕ ${stats.totalMembers} orang\n` +
+                        `🛡️ *Total Admin*   ﹕ ${stats.totalAdmins} orang\n` +
+                        `🙋 *Member Biasa* ﹕ ${stats.totalMembers_} orang\n` +
+                        `📈 *Rasio Admin*   ﹕ ${stats.adminPct}%\n` +
+                        `     [${stats.adminBar}]\n` +
+                        `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
                         `\n` +
-                        `_Terimakasih telah aktif mengelola grup!_ 🙏`;
+                        `✅ Admin *diizinkan* mentag grup.\n` +
+                        `🔔 Anggota telah diberitahu!\n` +
+                        `\n` +
+                        `_Terima kasih telah aktif mengelola grup!_ 🙏`;
 
                     await hisoka.sendMessage(remoteJid, {
                         text: adminMsg,
@@ -248,7 +347,7 @@ export default async function handleAntiTagSW(message, hisoka) {
             }
         }
 
-        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | BotAdmin: ${isAdmin}\x1b[39m`);
+        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Metode: ${tagMethod} | Sender: ${senderNumber} | BotAdmin: ${isAdmin}\x1b[39m`);
 
         if (!isAdmin) {
             console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan (tanpa hapus/kick).\x1b[39m');
@@ -263,7 +362,6 @@ export default async function handleAntiTagSW(message, hisoka) {
         const newWarn = freshData.warnings[remoteJid][senderJid];
         const maxWarnings = antiTagSWConfig.maxWarnings ?? 3;
         saveData(freshData);
-        // Ganti referensi data ke freshData untuk blok berikutnya
         Object.assign(data, freshData);
 
         const now = new Date();
@@ -276,8 +374,8 @@ export default async function handleAntiTagSW(message, hisoka) {
             day: '2-digit', month: '2-digit', year: 'numeric'
         });
 
-        // Deteksi tipe konten status secara realtime
-        const [contentLabel, contentEmoji] = detectStatusContentType(message);
+        // Bangun statistik grup
+        const stats = buildGroupStats(groupMeta, newWarn, maxWarnings);
 
         if (newWarn >= maxWarnings) {
             // Reset warning setelah max tercapai
@@ -285,27 +383,39 @@ export default async function handleAntiTagSW(message, hisoka) {
             saveData(freshData);
 
             const kickStatusLine = isAdmin
-                ? `💥 *Status:* Telah di-*KICK* dari grup!`
+                ? `💥 *Status*    ﹕ Telah di-*KICK* dari grup!`
                 : `⚠️ *Bot bukan admin* — tidak bisa kick!\n💡 Jadikan bot admin agar bisa kick otomatis.`;
 
             const kickMsg =
-                `╭─────────────────────────────╮\n` +
-                `│   ⛔ *ANTI-TAG STATUS* ⛔    │\n` +
-                `╰─────────────────────────────╯\n` +
+                `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
+                `✦ ⛔ *ANTI-TAG STATUS* ⛔ ✦\n` +
+                `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
                 `\n` +
-                `👤 *Pelanggar:* @${senderNumber}\n` +
-                `📅 *Waktu:* ${timeStr} • ${dateStr}\n` +
-                `${contentEmoji} *Tipe Konten:* ${contentLabel}\n` +
+                `👤 *Pelanggar* ﹕@${senderNumber}\n` +
+                `🕐 *Waktu*     ﹕${timeStr} • ${dateStr}\n` +
+                `${contentEmoji} *Konten*   ﹕${contentLabel}\n` +
+                `📡 *Metode*    ﹕${tagMethod}\n` +
                 `\n` +
-                `┌─────────────────────────────\n` +
-                `│ ⚠️  *Pelanggaran Terdeteksi*\n` +
-                `│ Mentag grup lewat STATUS WA\n` +
-                `└─────────────────────────────\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `  📊 *STATISTIK GRUP*\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `👥 *Total Member*  ﹕ ${stats.totalMembers} orang\n` +
+                `🛡️ *Total Admin*   ﹕ ${stats.totalAdmins} orang\n` +
+                `🙋 *Member Biasa* ﹕ ${stats.totalMembers_} orang\n` +
+                `📈 *Rasio Admin*   ﹕ ${stats.adminPct}%\n` +
+                `     [${stats.adminBar}]\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
                 `\n` +
-                `🚫 *Peringatan:* ${maxWarnings}/${maxWarnings}\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `  ⚠️ *PELANGGARAN*\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `🚫 Mentag grup lewat *${tagMethod}*\n` +
+                `\n` +
+                `🔴 *Peringatan* ﹕ ◆◆◆ ${maxWarnings}/${maxWarnings}\n` +
                 `${kickStatusLine}\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
                 `\n` +
-                `_Jangan ulangi perbuatan ini di grup lain!_`;
+                `_Jangan ulangi perbuatan ini di grup lain!_ 😤`;
 
             await hisoka.sendMessage(remoteJid, {
                 text: kickMsg,
@@ -343,31 +453,43 @@ export default async function handleAntiTagSW(message, hisoka) {
                 }
             }
         } else {
-            // Isi bar peringatan
-            const filled = '▰'.repeat(newWarn);
-            const empty = '▱'.repeat(maxWarnings - newWarn);
-            const bar = filled + empty;
+            const deleteInfo = isAdmin
+                ? `🗑️ *Pesan*     ﹕ Telah dihapus otomatis.\n`
+                : `⚠️ *Pesan*     ﹕ Bot bukan admin, tidak bisa hapus.\n`;
 
-            const deleteInfo = isAdmin ? `│ 🗑️  Pesan telah dihapus.\n` : `│ ⚠️  Bot bukan admin, pesan\n│    tidak bisa dihapus.\n`;
+            const nextWarnInfo = (newWarn >= maxWarnings - 1)
+                ? `⚡ *Peringatan berikutnya = KICK otomatis!*`
+                : `💡 Sisa *${maxWarnings - newWarn}x* lagi sebelum di-kick!`;
 
             const warnMsg =
-                `╭─────────────────────────────╮\n` +
-                `│   ⚠️ *ANTI-TAG STATUS* ⚠️   │\n` +
-                `╰─────────────────────────────╯\n` +
+                `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
+                `✦ ⚠️ *ANTI-TAG STATUS* ⚠️ ✦\n` +
+                `⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛\n` +
                 `\n` +
-                `👤 *Pelanggar:* @${senderNumber}\n` +
-                `📅 *Waktu:* ${timeStr} • ${dateStr}\n` +
-                `${contentEmoji} *Tipe Konten:* ${contentLabel}\n` +
-                `\n` +
-                `┌─────────────────────────────\n` +
-                `│ 🚫 Dilarang mentag grup\n` +
-                `│    lewat *STATUS WhatsApp!*\n` +
+                `👤 *Pelanggar* ﹕@${senderNumber}\n` +
+                `🕐 *Waktu*     ﹕${timeStr} • ${dateStr}\n` +
+                `${contentEmoji} *Konten*   ﹕${contentLabel}\n` +
+                `📡 *Metode*    ﹕${tagMethod}\n` +
                 `${deleteInfo}` +
-                `└─────────────────────────────\n` +
                 `\n` +
-                `📊 *Peringatan:* ${bar} ${newWarn}/${maxWarnings}\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `  📊 *STATISTIK GRUP*\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `👥 *Total Member*  ﹕ ${stats.totalMembers} orang\n` +
+                `🛡️ *Total Admin*   ﹕ ${stats.totalAdmins} orang\n` +
+                `🙋 *Member Biasa* ﹕ ${stats.totalMembers_} orang\n` +
+                `📈 *Rasio Admin*   ﹕ ${stats.adminPct}%\n` +
+                `     [${stats.adminBar}]\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
                 `\n` +
-                `_${newWarn >= maxWarnings - 1 ? '⚠️ Peringatan berikutnya = KICK!' : `Sisa ${maxWarnings - newWarn}x lagi sebelum di-kick!`}_`;
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `  🚫 *PERINGATAN*\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n` +
+                `🔴 Dilarang mentag grup via *${tagMethod}*!\n` +
+                `\n` +
+                `📊 *Progress* ﹕ ${stats.warnBar} ${newWarn}/${maxWarnings}\n` +
+                `${nextWarnInfo}\n` +
+                `◈━━━━━━━━━━━━━━━━━━━━━━━◈`;
 
             await hisoka.sendMessage(remoteJid, {
                 text: warnMsg,
@@ -394,7 +516,7 @@ export default async function handleAntiTagSW(message, hisoka) {
                 }
             }
 
-            console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber} | Admin: ${isAdmin}\x1b[39m`);
+            console.log(`\x1b[33m[AntiTagSW] Warn ${newWarn}/${maxWarnings} - ${senderNumber} | Admin: ${isAdmin} | Metode: ${tagMethod}\x1b[39m`);
         }
     } catch (err) {
         console.error('\x1b[31m[AntiTagSW] Error:\x1b[39m', err.message);

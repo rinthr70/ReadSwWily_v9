@@ -29,6 +29,16 @@
   ▸ 📈 Rasio Admin (%) + grafik batang [████░░░░░░]
 └ Data diambil realtime dari groupMetadata
 
+> 📌 *AntiTagSW — Auto-React Story Pelanggar*
+└ Setiap kali seseorang menandai grup via Status WA,
+  bot otomatis mereaction story mereka
+└ Tujuan: agar pelanggar tahu bot "melihat" story-nya
+  dan peringatan lebih berkesan / tidak diabaikan
+└ Reaction dikirim ke status@broadcast dengan
+  messageKey.id milik story si pelanggar
+└ Berjalan bersamaan dengan pengiriman pesan peringatan
+  ke grup — tidak ada delay tambahan
+
 > 📌 *AntiTagSW — Tampilan Pesan Diperbarui*
 └ Header bold: ⬛⬛⬛ ✦ ⚠️ ANTI-TAG STATUS ⚠️ ✦ ⬛⬛⬛
 └ Pemisah seksi: ◈━━━━━━━━━━━━━━━━━━━━━━━◈
@@ -124,6 +134,8 @@
   → Tambah fungsi detectCaptionGroupTag()
   → Tambah fungsi buildGroupStats()
   → Redesign semua template pesan peringatan
+  → Tambah auto-react story pelanggar via
+    hisoka.readMessages + sendMessage react
 
 └ File diubah: src/handler/message.js
   → upswgc: tambah PRIORITAS 1 (media langsung)

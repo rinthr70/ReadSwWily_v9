@@ -45,6 +45,25 @@ function parseYtdlpError(stderr, fallback) {
     return fallback || stderr.substring(0, 150);
 }
 
+async function ensureYtdlp() {
+    const ytdlpBin = path.join(process.cwd(), 'tmp', 'yt-dlp');
+    if (fs.existsSync(ytdlpBin)) return ytdlpBin;
+
+    console.log('\x1b[33m[YT-DLP] Binary tidak ditemukan, mengunduh otomatis...\x1b[39m');
+    const downloadUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
+
+    await new Promise((resolve, reject) => {
+        exec(`curl -L "${downloadUrl}" -o "${ytdlpBin}"`, { timeout: 120000 }, (err) => {
+            if (err) return reject(new Error('Gagal mengunduh yt-dlp: ' + err.message));
+            resolve();
+        });
+    });
+
+    fs.chmodSync(ytdlpBin, 0o755);
+    console.log('\x1b[32m[YT-DLP] ✓ Binary berhasil diunduh dan siap digunakan.\x1b[39m');
+    return ytdlpBin;
+}
+
 function getSenderNumber(m) {
     if (m.key?.participant) return m.key.participant.split('@')[0];
     if (m.key?.remoteJid) return m.key.remoteJid.split('@')[0];
@@ -3765,13 +3784,13 @@ text += `╰═════════════════╯`;
                                                 caption: playCaption
                                         }, { quoted: m });
 
-                                        const ytdlpBin = path.join(process.cwd(), 'tmp', 'yt-dlp');
+                                        const ytdlpBin = await ensureYtdlp();
                                         const tmpId = Date.now();
                                         const tmpFile = path.join(process.cwd(), 'tmp', `play_${tmpId}.mp3`);
                                         const tmpTemplate = path.join(process.cwd(), 'tmp', `play_${tmpId}.%(ext)s`);
 
                                         await new Promise((resolve, reject) => {
-                                                const cmd = `"${ytdlpBin}" --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${tmpTemplate}" "${video.url}"`;
+                                                const cmd = `"${ytdlpBin}" --js-runtimes node --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${tmpTemplate}" "${video.url}"`;
                                                 exec(cmd, { timeout: 120000 }, (err, stdout, stderr) => {
                                                         if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve();
@@ -3817,10 +3836,10 @@ text += `╰═════════════════╯`;
                                         await hisoka.sendMessage(m.from, { react: { text: '⏳', key: m.key } });
                                         const loadingMsg = await m.reply('⏳ Mengambil info video...');
 
-                                        const ytdlpBin = path.join(process.cwd(), 'tmp', 'yt-dlp');
+                                        const ytdlpBin = await ensureYtdlp();
 
                                         const metaRaw = await new Promise((resolve, reject) => {
-                                                exec(`"${ytdlpBin}" --no-playlist --dump-json "${ytUrl}"`, { timeout: 30000 }, (err, stdout, stderr) => {
+                                                exec(`"${ytdlpBin}" --js-runtimes node --no-playlist --dump-json "${ytUrl}"`, { timeout: 30000 }, (err, stdout, stderr) => {
                                                         if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve(stdout.trim());
                                                 });
@@ -3866,7 +3885,7 @@ text += `╰═════════════════╯`;
                                         const tmpTemplate = path.join(process.cwd(), 'tmp', `ytmp3_${tmpId}.%(ext)s`);
 
                                         await new Promise((resolve, reject) => {
-                                                const cmd = `"${ytdlpBin}" --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${tmpTemplate}" "${ytUrl}"`;
+                                                const cmd = `"${ytdlpBin}" --js-runtimes node --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${tmpTemplate}" "${ytUrl}"`;
                                                 exec(cmd, { timeout: 120000 }, (err, stdout, stderr) => {
                                                         if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve();
@@ -3912,10 +3931,10 @@ text += `╰═════════════════╯`;
                                         await hisoka.sendMessage(m.from, { react: { text: '⏳', key: m.key } });
                                         const loadingMsg = await m.reply('⏳ Mengambil info video...');
 
-                                        const ytdlpBin = path.join(process.cwd(), 'tmp', 'yt-dlp');
+                                        const ytdlpBin = await ensureYtdlp();
 
                                         const metaRaw = await new Promise((resolve, reject) => {
-                                                exec(`"${ytdlpBin}" --no-playlist --dump-json "${ytUrl}"`, { timeout: 30000 }, (err, stdout, stderr) => {
+                                                exec(`"${ytdlpBin}" --js-runtimes node --no-playlist --dump-json "${ytUrl}"`, { timeout: 30000 }, (err, stdout, stderr) => {
                                                         if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve(stdout.trim());
                                                 });
@@ -3962,7 +3981,7 @@ text += `╰═════════════════╯`;
                                         const tmpTemplate = path.join(process.cwd(), 'tmp', `ytmp4_${tmpId}.%(ext)s`);
 
                                         await new Promise((resolve, reject) => {
-                                                const cmd = `"${ytdlpBin}" --no-playlist -f "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360]+bestaudio/best[height<=360]" --merge-output-format mp4 -o "${tmpTemplate}" "${ytUrl}"`;
+                                                const cmd = `"${ytdlpBin}" --js-runtimes node --no-playlist -f "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360]+bestaudio/best[height<=360]" --merge-output-format mp4 -o "${tmpTemplate}" "${ytUrl}"`;
                                                 exec(cmd, { timeout: 180000 }, (err, stdout, stderr) => {
                                                         if (err) return reject(new Error(parseYtdlpError(stderr, err.message)));
                                                         resolve();

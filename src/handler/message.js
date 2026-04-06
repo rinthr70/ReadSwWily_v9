@@ -4259,46 +4259,29 @@ text += `╰═════════════════╯`;
                                         `◈━━━━━━━━━━━━━━━━━━━━━━━◈\n\n` +
                                         `_Pilih grup tujuan di bawah_ 👇`;
 
-                                // Bangun contextInfo untuk reply ke pesan .upswgc
-                                const swgcQuotedCtx = {
-                                        stanzaId: m.key.id,
-                                        participant: m.sender || m.key?.participant || m.key?.remoteJid,
-                                        quotedMessage: m.raw || m.message,
-                                        remoteJid: m.from,
-                                };
-
-                                const swgcMsg = generateWAMessageFromContent(
-                                        m.from,
-                                        {
-                                                viewOnceMessage: {
-                                                        message: {
-                                                                messageContextInfo: { deviceListMetadata: {}, deviceListMetadataVersion: 2 },
-                                                                interactiveMessage: {
-                                                                        contextInfo: swgcQuotedCtx,
-                                                                        body: { text: swgcBodyText },
-                                                                        nativeFlowMessage: {
-                                                                                buttons: [
-                                                                                        {
-                                                                                                name: 'single_select',
-                                                                                                buttonParamsJson: JSON.stringify({
-                                                                                                        title: '🏘️ PILIH GRUP TUJUAN',
-                                                                                                        sections: [
-                                                                                                                { title: '🏘️ Daftar Grup Bot', rows: swgcRows }
-                                                                                                        ]
-                                                                                                })
-                                                                                        }
+                                // Kirim button dengan reply ke pesan .upswgc (sama seperti pola jadibot)
+                                await m.reply({
+                                        interactiveMessage: {
+                                                contextInfo: {
+                                                        stanzaId: m.key.id,
+                                                        participant: m.sender || m.key?.participant || m.key?.remoteJid,
+                                                        quotedMessage: m.message,
+                                                },
+                                                body: { text: swgcBodyText },
+                                                nativeFlowMessage: {
+                                                        buttons: [
+                                                                {
+                                                                        name: 'single_select',
+                                                                        buttonParamsJson: JSON.stringify({
+                                                                                title: '🏘️ PILIH GRUP TUJUAN',
+                                                                                sections: [
+                                                                                        { title: '🏘️ Daftar Grup Bot', rows: swgcRows }
                                                                                 ]
-                                                                        }
+                                                                        })
                                                                 }
-                                                        }
+                                                        ]
                                                 }
-                                        },
-                                        { quoted: m },
-                                        {}
-                                );
-
-                                await hisoka.relayMessage(swgcMsg.key.remoteJid, swgcMsg.message, {
-                                        messageId: swgcMsg.key.id
+                                        }
                                 });
 
                                 logCommand(m, hisoka, m.command);

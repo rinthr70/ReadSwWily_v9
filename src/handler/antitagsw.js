@@ -157,24 +157,48 @@ export default async function handleAntiTagSW(message, hisoka) {
         const botJid = jidNormalizedUser(hisoka.user?.id || '');
         if (areJidsSameUser(senderJid, botJid)) return;
 
-        // Selalu fetch live metadata agar admin status akurat (tidak pakai cache)
-        let groupMeta = null;
-        try {
-            groupMeta = await hisoka.groupMetadata(remoteJid);
-            if (groupMeta) hisoka.groups?.write(remoteJid, groupMeta);
-        } catch (_) {
-            groupMeta = hisoka.groups?.read(remoteJid) || null;
-        }
-
-        // Helper: bandingkan JID dengan ekstrak nomor saja (tahan LID format)
+        // Cek admin bot dari file data/botadmin.json (realtime)
         const botNumber = botJid.split('@')[0];
         const senderNumberClean = senderJid.split('@')[0];
+        const BOT_ADMIN_FILE = path.join(process.cwd(), 'data', 'botadmin.json');
+
+        function loadBotAdminFile() {
+            try {
+                if (fs.existsSync(BOT_ADMIN_FILE)) return JSON.parse(fs.readFileSync(BOT_ADMIN_FILE, 'utf-8'));
+            } catch (_) {}
+            return {};
+        }
 
         function findParticipant(participants, targetNumber) {
             return participants?.find(p => {
                 const pNum = (p.phoneNumber || p.id || '').split('@')[0];
                 return pNum === targetNumber || (p.lid && p.lid.split('@')[0] === targetNumber);
             });
+        }
+
+        // Cek dari file botadmin.json dulu (lebih cepat & akurat)
+        const botAdminData = loadBotAdminFile();
+        let isAdmin = botAdminData[remoteJid] === true;
+
+        // Jika tidak ada di file, fallback ke live fetch
+        let groupMeta = null;
+        if (!(remoteJid in botAdminData)) {
+            try {
+                groupMeta = await hisoka.groupMetadata(remoteJid);
+                if (groupMeta) hisoka.groups?.write(remoteJid, groupMeta);
+                const botP = findParticipant(groupMeta?.participants, botNumber);
+                isAdmin = !!botP?.admin;
+                // Simpan ke file untuk next time
+                botAdminData[remoteJid] = isAdmin;
+                try { fs.writeFileSync(BOT_ADMIN_FILE, JSON.stringify(botAdminData, null, 2), 'utf-8'); } catch (_) {}
+            } catch (_) {
+                groupMeta = hisoka.groups?.read(remoteJid) || null;
+                const botP = findParticipant(groupMeta?.participants, botNumber);
+                isAdmin = !!botP?.admin;
+            }
+        } else {
+            // Tetap load groupMeta untuk cek sender admin
+            groupMeta = hisoka.groups?.read(remoteJid) || null;
         }
 
         if (groupMeta?.participants) {
@@ -223,16 +247,11 @@ export default async function handleAntiTagSW(message, hisoka) {
             }
         }
 
-        const botParticipantLive = findParticipant(groupMeta?.participants, botNumber);
-        const isAdmin = !!botParticipantLive?.admin;
-
-        console.log(`\x1b[33m[AntiTagSW] Bot admin check: ${botNumber} → admin=${isAdmin}\x1b[39m`);
+        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | BotAdmin: ${isAdmin}\x1b[39m`);
 
         if (!isAdmin) {
             console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan (tanpa hapus/kick).\x1b[39m');
         }
-
-        console.log(`\x1b[33m[AntiTagSW] Terdeteksi! Type: ${msgType} | Sender: ${senderNumber} | Admin: ${isAdmin}\x1b[39m`);
 
         // Update & simpan warning dulu
         if (!data.warnings[remoteJid]) data.warnings[remoteJid] = {};

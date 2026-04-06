@@ -149,6 +149,51 @@ function isJadibotSessionValid(number) {
   return fs.existsSync(path.join(dir, 'creds.json'));
 }
 
+/* ================= BOT ADMIN STATUS TRACKER ================= */
+const BOT_ADMIN_PATH = path.join(process.cwd(), 'data', 'botadmin.json');
+
+function loadBotAdminData() {
+  try {
+    if (fs.existsSync(BOT_ADMIN_PATH)) return JSON.parse(fs.readFileSync(BOT_ADMIN_PATH, 'utf-8'));
+  } catch (_) {}
+  return {};
+}
+
+function saveBotAdminData(data) {
+  try {
+    fs.writeFileSync(BOT_ADMIN_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (_) {}
+}
+
+function saveBotAdminStatus(hisoka, allGroups) {
+  try {
+    const botNumber = (hisoka.user?.id || '').split('@')[0].split(':')[0];
+    if (!botNumber) return;
+    const data = loadBotAdminData();
+    for (const g of allGroups) {
+      const participant = (g.participants || []).find(p => {
+        const pNum = (p.phoneNumber || p.id || '').split('@')[0];
+        return pNum === botNumber;
+      });
+      data[g.id] = !!participant?.admin;
+    }
+    saveBotAdminData(data);
+    const adminGroups = Object.values(data).filter(Boolean).length;
+    console.info(`\x1b[32m[BotAdmin] ✅ Tersimpan: ${Object.keys(data).length} grup, admin di ${adminGroups} grup\x1b[39m`);
+  } catch (err) {
+    console.error('\x1b[31m[BotAdmin] Gagal simpan:\x1b[39m', err?.message);
+  }
+}
+
+function updateBotAdminStatus(groupId, botNumber, isAdmin) {
+  try {
+    const data = loadBotAdminData();
+    data[groupId] = isAdmin;
+    saveBotAdminData(data);
+    console.info(`\x1b[32m[BotAdmin] Update ${groupId}: admin=${isAdmin}\x1b[39m`);
+  } catch (_) {}
+}
+
 if (!process.env.BOT_SESSION_NAME) process.env.BOT_SESSION_NAME = 'default';
 if (!process.env.BOT_NUMBER_OWNER) process.env.BOT_NUMBER_OWNER = '1';
 
@@ -487,6 +532,8 @@ async function main() {
                                 if (allGroups.length > 0) {
                                         console.info(`\x1b[32m[Groups] ✅ Loaded ${allGroups.length} groups\x1b[39m`);
                                 }
+                                // Simpan status admin bot per grup ke data/botadmin.json
+                                saveBotAdminStatus(hisoka, allGroups);
                         } catch (err) {
                                 console.error('\x1b[31m[Groups] Gagal fetch grup:\x1b[39m', err?.message || err);
                         }
@@ -745,6 +792,7 @@ setTimeout(() => {
 
         hisoka.ev.on('group-participants.update', ({ id, author, participants, action }) => {
                 const existingGroup = groups.read(id) || {};
+                const botNumber = (hisoka.user?.id || '').split('@')[0].split(':')[0];
 
                 switch (action) {
                         case 'add':
@@ -757,7 +805,7 @@ setTimeout(() => {
                                 });
                                 break;
                         case 'promote':
-                        case 'demote':
+                        case 'demote': {
                                 existingGroup.participants = (existingGroup.participants || []).map(p => {
                                         const existId = p.phoneNumber || p.id;
                                         if (participants.some(modified => areJidsSameUser(existId, modified.phoneNumber || modified.id))) {
@@ -765,7 +813,18 @@ setTimeout(() => {
                                         }
                                         return p;
                                 });
+                                // Cek apakah bot sendiri yang di-promote/demote
+                                const botAffected = participants.some(p => {
+                                        const pNum = (p.phoneNumber || p.id || '').split('@')[0];
+                                        return pNum === botNumber;
+                                });
+                                if (botAffected) {
+                                        const isNowAdmin = action === 'promote';
+                                        updateBotAdminStatus(id, botNumber, isNowAdmin);
+                                        console.info(`\x1b[32m[BotAdmin] Bot ${action === 'promote' ? 'dijadikan ADMIN' : 'dicopot dari admin'} di grup ${id}\x1b[39m`);
+                                }
                                 break;
+                        }
                         default:
                                 console.warn(`\x1b[33mUnknown group action: ${action}\x1b[39m`);
                                 return;

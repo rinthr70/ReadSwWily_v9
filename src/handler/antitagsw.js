@@ -220,7 +220,35 @@ export default async function handleAntiTagSW(message, hisoka) {
                 areJidsSameUser(p.phoneNumber || p.id, botJid)
             );
             if (!botParticipant?.admin) {
-                console.log('\x1b[33m[AntiTagSW] Bot bukan admin, tidak bisa hapus/kick.\x1b[39m');
+                console.log('\x1b[33m[AntiTagSW] Bot bukan admin, hanya kirim peringatan.\x1b[39m');
+                // Bot tidak admin: tetap kirim peringatan tapi skip hapus & kick
+                const [ncLabel, ncEmoji] = detectStatusContentType(message);
+                const ncNow = new Date();
+                const ncTime = ncNow.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const ncDate = ncNow.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: '2-digit', year: 'numeric' });
+                const ncMsg =
+                    `╭─────────────────────────────╮\n` +
+                    `│   ⚠️ *ANTI-TAG STATUS* ⚠️   │\n` +
+                    `╰─────────────────────────────╯\n` +
+                    `\n` +
+                    `👤 *Pelanggar:* @${senderNumber}\n` +
+                    `📅 *Waktu:* ${ncTime} • ${ncDate}\n` +
+                    `${ncEmoji} *Tipe Konten:* ${ncLabel}\n` +
+                    `\n` +
+                    `┌─────────────────────────────\n` +
+                    `│ 🚫 Dilarang mentag grup\n` +
+                    `│    lewat *STATUS WhatsApp!*\n` +
+                    `│ ⚠️  Bot bukan admin, pesan\n` +
+                    `│    tidak bisa dihapus/kick.\n` +
+                    `└─────────────────────────────\n` +
+                    `\n` +
+                    `_Jadikan bot sebagai admin agar bisa hapus & kick!_`;
+                try {
+                    await hisoka.sendMessage(remoteJid, {
+                        text: ncMsg,
+                        contextInfo: { mentionedJid: [senderJid] }
+                    }, { quoted: message });
+                } catch (_) {}
                 return;
             }
         }

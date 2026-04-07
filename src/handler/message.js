@@ -4695,27 +4695,55 @@ text += `╰═════════════════╯`;
                                 if (!query || (!query.trim().endsWith('@g.us') && query.trim() !== 'all')) {
                                         if (!gtGroupKeys.length) return m.reply('❌ Bot tidak bergabung di grup manapun.');
 
+                                        const gtBotNum = (hisoka.user?.id || '').split('@')[0].split(':')[0];
+                                        const gtTotalMemberAll = gtGroupKeys.reduce((acc, jid) => {
+                                                const g = hisoka.groups.read(jid);
+                                                return acc + (g?.participants?.length || 0);
+                                        }, 0);
+
                                         const gtSorted = gtGroupKeys
                                                 .map(jid => {
                                                         const g = hisoka.groups.read(jid);
-                                                        return { jid, name: g?.subject || g?.name || jid };
+                                                        const parts = g?.participants || [];
+                                                        const totalMember = parts.length;
+                                                        const totalAdmin = parts.filter(p => p.admin).length;
+                                                        const isBotAdmin = parts.some(p => {
+                                                                const num = (p.jid || p.phoneNumber || p.id || '').split('@')[0].split(':')[0];
+                                                                return num === gtBotNum && p.admin;
+                                                        });
+                                                        return {
+                                                                jid,
+                                                                name: g?.subject || g?.name || jid,
+                                                                totalMember,
+                                                                totalAdmin,
+                                                                isBotAdmin
+                                                        };
                                                 })
                                                 .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'id', { numeric: true }));
 
                                         const btn = new Button()
                                                 .setBody(
-                                                        `👻 *Ghost Tag*\n\n` +
-                                                        `Pilih opsi di bawah:\n` +
-                                                        `• *Semua Grup* — kirim ghost tag ke semua grup sekaligus\n` +
-                                                        `• *Pilih Satu Grup* — pilih satu grup dari daftar`
+                                                        `『 👻 』 *G H O S T  T A G*\n` +
+                                                        `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+                                                        `✦ *Semua Grup* — tag semua grup sekaligus\n` +
+                                                        `✦ *Pilih Satu Grup* — pilih dari daftar\n\n` +
+                                                        `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
+                                                        `🗂️ Grup   : *${gtGroupKeys.length}* grup\n` +
+                                                        `👥 Member : *${gtTotalMemberAll}* total`
                                                 )
-                                                .setFooter(`📋 Total grup: ${gtGroupKeys.length} | Powered by Wily Bot 🤖`)
-                                                .addReply('🌐 Semua Grup', `${gtPrefix}ghosttag all`)
+                                                .setFooter(`⚡ Wily Bot • Ghost Tag System`)
+                                                .addReply('🌐 Tag Semua Grup', `${gtPrefix}ghosttag all`)
                                                 .addSelection('📂 Pilih Satu Grup')
-                                                .makeSections('📋 Daftar Grup');
+                                                .makeSections('✦ Daftar Grup');
 
-                                        for (const { jid, name } of gtSorted) {
-                                                btn.makeRow('', name, jid, `${gtPrefix}ghosttag ${jid}`);
+                                        for (const { jid, name, totalMember, totalAdmin, isBotAdmin } of gtSorted) {
+                                                const adminBadge = isBotAdmin ? '👑 Admin' : '👤 Member';
+                                                btn.makeRow(
+                                                        adminBadge,
+                                                        name,
+                                                        `👥 ${totalMember} anggota  •  🛡️ ${totalAdmin} admin`,
+                                                        `${gtPrefix}ghosttag ${jid}`
+                                                );
                                         }
 
                                         await btn.run(m.from, hisoka, m);

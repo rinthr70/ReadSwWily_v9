@@ -517,27 +517,41 @@ async function main() {
                         const userId = hisoka.user?.id?.split(':')[0] || '-';
                         const userName = hisoka.user?.name || '-';
                         hisoka.mainBotNumber = userId; // wajib untuk jadibot
-                        console.log('\x1b[90m··················································\x1b[0m');
-                        console.log(`\x1b[32m[Bot] ✅ Connected: ${userId} | ${userName}\x1b[39m`);
-
                         const privacySettings = await hisoka.fetchPrivacySettings();
                         settings.write('privacy', privacySettings);
 
                         const commands = await getCaseName(path.join(process.cwd(), 'src', 'handler', 'message.js'));
                         hisoka.loadedCommands = commands;
-                        console.info(`\x1b[32m[Handler] ✅ Loaded ${commands.length} commands\x1b[39m`);
 
+                        let groupCount = 0;
+                        let adminCount = 0;
                         try {
                                 const allGroups = Object.values(await hisoka.groupFetchAllParticipating());
                                 allGroups.forEach(g => groups.write(g.id, g));
-                                if (allGroups.length > 0) {
-                                        console.info(`\x1b[32m[Groups] ✅ Loaded ${allGroups.length} groups\x1b[39m`);
-                                }
-                                // Simpan status admin bot per grup ke data/botadmin.json
+                                groupCount = allGroups.length;
                                 saveBotAdminStatus(hisoka, allGroups);
+                                const botAdminData = loadBotAdminData();
+                                adminCount = Object.values(botAdminData).filter(Boolean).length;
                         } catch (err) {
                                 console.error('\x1b[31m[Groups] Gagal fetch grup:\x1b[39m', err?.message || err);
                         }
+
+                        const config2 = loadConfig();
+                        const autoOnline2 = config2.autoOnline || {};
+                        const modeLabel = autoOnline2.enabled !== false ? 'ONLINE 🟢' : 'OFFLINE 🔴';
+
+                        const G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', R = '\x1b[0m', B = '\x1b[1m';
+                        console.log('');
+                        console.log(`${C}╔══════════════════════════════════╗${R}`);
+                        console.log(`${C}║${R}     ${B}${G}🤖  W I L Y  B O T  A K T I F${R}     ${C}║${R}`);
+                        console.log(`${C}╠══════════════════════════════════╣${R}`);
+                        console.log(`${C}║${R} ${G}✅${R} Nomor  : ${B}${userId}${R}`);
+                        console.log(`${C}║${R} ${G}👤${R} Nama   : ${B}${userName}${R}`);
+                        console.log(`${C}║${R} ${Y}📋${R} Cmd    : ${B}${commands.length} commands${R}`);
+                        console.log(`${C}║${R} ${Y}👥${R} Grup   : ${B}${groupCount} grup (admin: ${adminCount})${R}`);
+                        console.log(`${C}║${R} ${G}🌐${R} Status : ${B}${modeLabel}${R}`);
+                        console.log(`${C}╚══════════════════════════════════╝${R}`);
+                        console.log('');
 
                         const startAutoOnline = () => {
                         const config = loadConfig();
@@ -597,39 +611,41 @@ async function main() {
 const jadibotDir = path.join(process.cwd(), 'jadibot');
 
 setTimeout(() => {
-  if (!fs.existsSync(jadibotDir)) {
-    console.log('[JADIBOT] Folder jadibot tidak ditemukan');
-    return;
-  }
+  if (!fs.existsSync(jadibotDir)) return;
 
   const bots = fs.readdirSync(jadibotDir).filter(name => {
     const fullPath = path.join(jadibotDir, name);
     return fs.statSync(fullPath).isDirectory() && /^\d+$/.test(name);
   });
 
-  if (!bots.length) {
-    console.log('[JADIBOT] Tidak ada jadibot tersimpan');
-    return;
-  }
+  if (!bots.length) return;
 
-  console.log(`[JADIBOT] Auto starting ${bots.length} jadibot`);
+  const C = '\x1b[36m', G = '\x1b[32m', Y = '\x1b[33m', R = '\x1b[0m', B = '\x1b[1m';
+  console.log('');
+  console.log(`${C}╔══════════════════════════════════╗${R}`);
+  console.log(`${C}║${R}   ${B}${Y}🤖  A U T O  J A D I B O T${R}         ${C}║${R}`);
+  console.log(`${C}╠══════════════════════════════════╣${R}`);
+  console.log(`${C}║${R} ${Y}📦${R} Total  : ${B}${bots.length} sesi tersimpan${R}`);
 
   for (const number of bots) {
     if (global.autoStartedJadibot.has(number)) continue;
     global.autoStartedJadibot.add(number);
 
     if (!isJadibotSessionValid(number)) {
-      console.log(`[JADIBOT] Skip ${number} (session tidak valid)`);
+      console.log(`${C}║${R} ${Y}⚠️${R}  ${number} - session tidak valid`);
       continue;
     }
 
-    console.log(`[JADIBOT] Starting jadibot ${number}`);
+    console.log(`${C}║${R} ${G}▶${R}  Starting: ${B}${number}${R}`);
     startJadibot(
       number,
       () => {},
       hisoka.user.id.split(':')[0].split('@')[0]
     );
   }
+
+  console.log(`${C}╚══════════════════════════════════╝${R}`);
+  console.log('');
 }, 3000); // delay agar socket utama stabil
 }
 

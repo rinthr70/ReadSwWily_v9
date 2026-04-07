@@ -362,7 +362,15 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
         pairingTimeout.delete(number)
       }
 
-      console.log(`[JADIBOT] ✅ ${number} CONNECTED`)
+      const C = '\x1b[36m', G = '\x1b[32m', R = '\x1b[0m', B = '\x1b[1m';
+      console.log('');
+      console.log(`${C}╔══════════════════════════════════╗${R}`);
+      console.log(`${C}║${R}    ${B}${G}✅  J A D I B O T  A K T I F${R}      ${C}║${R}`);
+      console.log(`${C}╠══════════════════════════════════╣${R}`);
+      console.log(`${C}║${R} ${G}📱${R} Nomor  : ${B}+${number}${R}`);
+      console.log(`${C}║${R} ${G}🔗${R} Status : ${B}CONNECTED${R}`);
+      console.log(`${C}╚══════════════════════════════════╝${R}`);
+      console.log('');
 
       // Edit pesan pairing secara realtime → tandai sudah terhubung
       if (pairingMsgKey && editMsg) {
@@ -415,7 +423,8 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
           fs.rmSync(sessionDir, { recursive: true, force: true })
         }
 
-        console.log(`[JADIBOT] ⚠️ ${number} LOGOUT PAKSA → session dihapus`)
+        const _Y = '\x1b[33m', _R = '\x1b[0m', _B = '\x1b[1m';
+        console.log(`${_Y}[JADIBOT]${_R} ⚠️  ${_B}${number}${_R} logout paksa → sesi dihapus`);
 
         // Kirim notif real-time ke owner beserta sisa list jadibot aktif
         const remainingList = [...jadibotMap.keys()]
@@ -435,7 +444,7 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
       }
 
       /* ===== RECONNECT NORMAL ===== */
-      console.log(`[JADIBOT] ${number} reconnecting...`)
+      console.log(`\x1b[33m[JADIBOT]\x1b[0m 🔄 ${number} reconnecting...`)
       // Tutup socket lama DULU sebelum buat yang baru
       cleanupSocket()
       setTimeout(() => {

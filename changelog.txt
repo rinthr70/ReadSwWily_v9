@@ -1,37 +1,30 @@
-🤖 *Script Bot Auto Reaction V8*
-📅 Senin, 6 April 2026
+🤖 *Script Bot Auto Reaction V9*
+📅 Selasa, 7 April 2026
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ✨ *FITUR BARU*
 
-◈ *AntiTagSW*
-> ✦ Deteksi tag grup lewat *caption media* & *reply*
-> ✦ Peringatan kini tampilkan *statistik grup*
->   (total member, admin, rasio + grafik batang)
-> ✦ Bot otomatis *reaction story* pelanggar
->   saat mereka menandai grup via status WA
-> ✦ Tampilan pesan peringatan diperbarui
->   (header, progress bar `◆◆◇`, layout 3 blok)
-
-◈ *UPSWGC*
-> ✦ Bisa kirim langsung lewat *caption media*
->   (tidak harus reply dulu)
-> ✦ *Audio + caption* sekarang diizinkan
-> ✦ Button pilih grup tampilkan *info member & admin*
-> ✦ Button muncul sebagai *reply* ke pesan `.upswgc`
-> ✦ Bot otomatis *reaction story* pengirim
->   setelah status berhasil terkirim ke grup
+◈ *Ghost Tag (.ghosttag / .gtag / .gt)*
+> ✦ Tag semua member grup secara diam-diam
+>   menggunakan albumMessage (mentionedJid)
+> ✦ Muncul button interaktif saat diketik tanpa argumen
+> ✦ Tombol *Tag Semua Grup* — ghosttag ke semua grup sekaligus
+> ✦ Dropdown *Pilih Satu Grup* — pilih grup spesifik
+> ✦ Setiap grup tampilkan info lengkap:
+>   jumlah anggota, jumlah admin, status bot (Admin/Member)
+> ✦ Urutan dropdown berdasarkan *anggota terbanyak* di atas
+> ✦ Laporan hasil dikirim setelah ghosttag selesai
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🔧 *BUG FIX*
 
-◈ *YTMP3 / YTMP4 / Play*
-> ✦ Binary `yt-dlp` tidak ada → sudah didownload ulang
-> ✦ Error JS runtime → tambah flag `--js-runtimes node`
-> ✦ Tambah fungsi *auto-download* `yt-dlp` otomatis
->   jika binary hilang / terhapus
+◈ *Jadibot Reconnect Loop*
+> ✦ Fix bug CONNECTED → reconnecting berulang terus
+> ✦ Tambah guard duplikat reconnect (cegah 2 socket bersaing)
+> ✦ Map socket lama kini dibersihkan sebelum reconnect
+> ✦ Fix diterapkan juga ke versi QR (startJadibotQR)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🤖 *Wily-Bot* — Updated 6 Apr 2026
+🤖 *Wily-Bot* — Updated 7 Apr 2026

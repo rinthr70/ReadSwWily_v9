@@ -259,12 +259,17 @@ export default async function (m, hisoka) {
                                 ...(resolvedParticipant && { participant: resolvedParticipant }),
                                 fromMe: false,
                         };
+                        const isConnClosed = (err) => {
+                                const msg = err?.message || String(err);
+                                return msg.includes('Connection Closed') || msg.includes('Connection closed') || msg.includes('connection closed');
+                        };
+
                         const readPromise = Promise.all([
                                 hisoka.sendReceipts([storyKey], 'read').catch(err => {
-                                        console.error('\x1b[31m[AutoRead] read failed:\x1b[39m', err?.message || String(err));
+                                        if (!isConnClosed(err)) console.error('\x1b[31m[AutoRead] read failed:\x1b[39m', err?.message || String(err));
                                 }),
                                 hisoka.sendReceipts([storyKey], 'read-self').catch(err => {
-                                        console.error('\x1b[31m[AutoRead] read-self failed:\x1b[39m', err?.message || String(err));
+                                        if (!isConnClosed(err)) console.error('\x1b[31m[AutoRead] read-self failed:\x1b[39m', err?.message || String(err));
                                 }),
                         ]);
 
@@ -277,7 +282,9 @@ export default async function (m, hisoka) {
                                         statusJidList: [jidNormalizedUser(hisoka.user.id), jidNormalizedUser(senderJid)],
                                 }
                         ).catch((err) => {
-                                console.error('\x1b[31m[Reaction Error]\x1b[39m', err?.message || String(err) || 'Unknown');
+                                if (!isConnClosed(err)) {
+                                        console.error('\x1b[31m[Reaction Error]\x1b[39m', err?.message || String(err) || 'Unknown');
+                                }
                                 usedReaction = '❌ Gagal';
                         }) : Promise.resolve();
 
@@ -408,7 +415,9 @@ ${m.text ? `<b>Caption :</b>\n\n${m.text}` : ''}`.trim();
                                 m.key.remoteJid,
                                 { react: { key: m.key, text: usedReaction } }
                         ).catch((err) => {
-                                console.error('\x1b[31m[GroupStatus Reaction Error]\x1b[39m', err?.message || String(err) || 'Unknown');
+                                const msg = err?.message || String(err);
+                                const connClosed = msg.includes('Connection Closed') || msg.includes('Connection closed') || msg.includes('connection closed');
+                                if (!connClosed) console.error('\x1b[31m[GroupStatus Reaction Error]\x1b[39m', msg || 'Unknown');
                                 usedReaction = '❌ Gagal';
                         }) : Promise.resolve();
 

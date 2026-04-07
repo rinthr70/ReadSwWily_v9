@@ -4660,13 +4660,40 @@ text += `╰═════════════════╯`;
                                 const gtPrefix = m.prefix || '.';
                                 const gtUserJid = hisoka.user?.id;
 
-                                // Jika tidak ada query atau query bukan group JID → tampilkan button pilih grup
-                                if (!query || !query.trim().endsWith('@g.us')) {
-                                        const gtGroupKeys = hisoka.groups.keys().filter(id => id.endsWith('@g.us'));
+                                const gtGroupKeys = hisoka.groups.keys().filter(id => id.endsWith('@g.us'));
 
-                                        if (!gtGroupKeys.length) {
-                                                return m.reply('❌ Bot tidak bergabung di grup manapun.');
+                                // ── Helper: kirim albumMessage ghosttag ke 1 grup ──
+                                async function gtSendOne(jid) {
+                                        let participants = [];
+                                        try {
+                                                const meta = hisoka.groups.read(jid);
+                                                participants = (meta?.participants || []).map(v => v.phoneNumber || v.id).filter(Boolean);
+                                        } catch (_) {}
+                                        if (!participants.length) {
+                                                try {
+                                                        const fetched = await hisoka.groupMetadata(jid);
+                                                        participants = fetched.participants.map(v => v.id).filter(Boolean);
+                                                } catch (_) {}
                                         }
+                                        if (!participants.length) return 0;
+                                        const album = generateWAMessageFromContent(
+                                                jid,
+                                                {
+                                                        albumMessage: {
+                                                                expectedImageCount: 0,
+                                                                expectedVideoCount: 0,
+                                                                contextInfo: { mentionedJid: participants }
+                                                        }
+                                                },
+                                                { userJid: gtUserJid }
+                                        );
+                                        await hisoka.relayMessage(jid, album.message, { messageId: album.key.id });
+                                        return participants.length;
+                                }
+
+                                // ── Tampilkan menu button jika tidak ada query / bukan JID / bukan 'all' ──
+                                if (!query || (!query.trim().endsWith('@g.us') && query.trim() !== 'all')) {
+                                        if (!gtGroupKeys.length) return m.reply('❌ Bot tidak bergabung di grup manapun.');
 
                                         const gtSorted = gtGroupKeys
                                                 .map(jid => {
@@ -4676,9 +4703,15 @@ text += `╰═════════════════╯`;
                                                 .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'id', { numeric: true }));
 
                                         const btn = new Button()
-                                                .setBody('👻 *Ghost Tag*\n\nPilih grup yang ingin di-ghosttag.\nSemua member akan di-mention secara diam-diam.')
-                                                .setFooter('Powered by Wily Bot 🤖')
-                                                .addSelection('Pilih Grup')
+                                                .setBody(
+                                                        `👻 *Ghost Tag*\n\n` +
+                                                        `Pilih opsi di bawah:\n` +
+                                                        `• *Semua Grup* — kirim ghost tag ke semua grup sekaligus\n` +
+                                                        `• *Pilih Satu Grup* — pilih satu grup dari daftar`
+                                                )
+                                                .setFooter(`📋 Total grup: ${gtGroupKeys.length} | Powered by Wily Bot 🤖`)
+                                                .addReply('🌐 Semua Grup', `${gtPrefix}ghosttag all`)
+                                                .addSelection('📂 Pilih Satu Grup')
                                                 .makeSections('📋 Daftar Grup');
 
                                         for (const { jid, name } of gtSorted) {
@@ -4690,46 +4723,39 @@ text += `╰═════════════════╯`;
                                         break;
                                 }
 
-                                // Kirim ghosttag albumMessage ke grup yang dipilih
-                                const gtJid = query.trim();
+                                // ── Mode: semua grup ──
+                                if (query.trim() === 'all') {
+                                        if (!gtGroupKeys.length) return m.reply('❌ Bot tidak bergabung di grup manapun.');
 
-                                // Ambil participants dari cache atau fetchMetadata
-                                let gtParticipants = [];
-                                try {
-                                        const gtMeta = hisoka.groups.read(gtJid);
-                                        gtParticipants = (gtMeta?.participants || []).map(v => v.phoneNumber || v.id).filter(Boolean);
-                                } catch (_) {}
+                                        await m.reply(`⏳ Mengirim ghost tag ke *${gtGroupKeys.length}* grup, mohon tunggu...`);
 
-                                if (!gtParticipants.length) {
-                                        try {
-                                                const fetched = await hisoka.groupMetadata(gtJid);
-                                                gtParticipants = fetched.participants.map(v => v.id).filter(Boolean);
-                                        } catch {
-                                                return m.reply('❌ Gagal mengambil data member grup. Pastikan JID grup benar.');
+                                        let gtOk = 0, gtFail = 0, gtTotalMember = 0;
+                                        for (const jid of gtGroupKeys) {
+                                                try {
+                                                        const count = await gtSendOne(jid);
+                                                        if (count > 0) { gtOk++; gtTotalMember += count; }
+                                                        else gtFail++;
+                                                } catch (_) { gtFail++; }
+                                                if (gtGroupKeys.length > 1) await new Promise(r => setTimeout(r, 1000));
                                         }
-                                }
 
-                                if (!gtParticipants.length) {
-                                        return m.reply('❌ Tidak ada member ditemukan di grup tersebut.');
-                                }
-
-                                try {
-                                        const gtAlbum = generateWAMessageFromContent(
-                                                gtJid,
-                                                {
-                                                        albumMessage: {
-                                                                expectedImageCount: 0,
-                                                                expectedVideoCount: 0,
-                                                                contextInfo: {
-                                                                        mentionedJid: gtParticipants
-                                                                }
-                                                        }
-                                                },
-                                                { userJid: gtUserJid }
+                                        await m.reply(
+                                                `✅ *Ghost Tag Selesai!*\n\n` +
+                                                `📊 *Hasil:*\n` +
+                                                `• ✅ Berhasil : ${gtOk} grup\n` +
+                                                `• ❌ Gagal    : ${gtFail} grup\n` +
+                                                `• 👥 Total    : ${gtTotalMember} member di-tag`
                                         );
+                                        logCommand(m, hisoka, 'ghosttag');
+                                        break;
+                                }
 
-                                        await hisoka.relayMessage(gtJid, gtAlbum.message, { messageId: gtAlbum.key.id });
-                                        await m.reply(`✅ Ghost tag berhasil dikirim ke *${gtParticipants.length}* member di grup tersebut!`);
+                                // ── Mode: satu grup dari JID ──
+                                const gtJid = query.trim();
+                                try {
+                                        const count = await gtSendOne(gtJid);
+                                        if (!count) return m.reply('❌ Tidak ada member ditemukan atau gagal mengambil data grup.');
+                                        await m.reply(`✅ Ghost tag berhasil dikirim ke *${count}* member!`);
                                 } catch (e) {
                                         await m.reply('❌ Gagal mengirim ghost tag: ' + (e.message || e));
                                 }

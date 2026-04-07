@@ -80,10 +80,10 @@ export function initBotStats() {
         if (!stats.startTime || botWasDead) {
                 stats.startTime = now;
                 stats.totalRestarts = 0;
-                console.log(`\x1b[33m[BotStats]\x1b[39m Fresh start - Uptime reset`);
+                console.log(`\x1b[33m→ Stats    :\x1b[39m Fresh start`);
         } else {
                 stats.totalRestarts = (stats.totalRestarts || 0) + 1;
-                console.log(`\x1b[32m[BotStats]\x1b[39m Auto-restart detected - Uptime preserved`);
+                console.log(`\x1b[32m→ Stats    :\x1b[39m Uptime preserved ♻️`);
         }
         
         stats.lastHeartbeat = now;

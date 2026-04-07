@@ -180,7 +180,7 @@ function saveBotAdminStatus(hisoka, allGroups) {
     }
     saveBotAdminData(data);
     const adminGroups = Object.values(data).filter(Boolean).length;
-    console.info(`\x1b[32m[BotAdmin] ✅ Tersimpan: ${Object.keys(data).length} grup, admin di ${adminGroups} grup\x1b[39m`);
+    console.info(`\x1b[32m→ Admin    :\x1b[39m ${Object.keys(data).length} grup, admin di ${adminGroups}`);
   } catch (err) {
     console.error('\x1b[31m[BotAdmin] Gagal simpan:\x1b[39m', err?.message);
   }
@@ -349,7 +349,7 @@ let memoryMonitor = null;
 
 async function main() {
         const sessionName = path.basename(sessionDir);
-        console.log(`\x1b[36m[Session] Starting: ${sessionName}\x1b[39m`);
+        console.log(`\x1b[36m→ Session  :\x1b[39m ${sessionName}`);
 
         await initHotReload();
 
@@ -383,7 +383,7 @@ async function main() {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
 
-        console.info(`\x1b[32m[Baileys] v${version.join('.')}${isLatest ? '' : ' (update tersedia)'}\x1b[39m`);
+        console.info(`\x1b[32m→ Baileys  :\x1b[39m v${version.join('.')}${isLatest ? '' : ' (update tersedia)'}`);
 
         const cacheMsg = new Map();
         // ini tambahan

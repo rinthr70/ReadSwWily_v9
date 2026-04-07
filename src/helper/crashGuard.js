@@ -85,7 +85,7 @@ export function setupCrashGuard(restartFn) {
         setTimeout(() => process.exit(0), 1000);
     });
 
-    console.log('\x1b[32m[CrashGuard] Global crash protection active\x1b[39m');
+    console.log('\x1b[32m→ Guard    :\x1b[39m Crash protection aktif');
 }
 
 export async function withTimeout(promise, ms = CMD_TIMEOUT_MS, label = 'operation') {

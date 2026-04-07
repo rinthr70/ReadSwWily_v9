@@ -101,9 +101,9 @@ export async function initHotReload() {
     }
 
     if (fail === 0) {
-        console.log(`\x1b[32m[HotReload] Active - Watching ${ok} files\x1b[39m`);
+        console.log(`\x1b[32m→ Reload   :\x1b[39m ${ok} files aktif`);
     } else {
-        console.log(`\x1b[33m[HotReload] Active - ${ok} watched, ${fail} failed: ${failed.join(', ')}\x1b[39m`);
+        console.log(`\x1b[33m→ Reload   :\x1b[39m ${ok} aktif, ${fail} gagal (${failed.join(', ')})`);
     }
 }
 

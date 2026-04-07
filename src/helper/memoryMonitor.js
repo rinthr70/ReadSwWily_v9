@@ -104,9 +104,7 @@ export class MemoryMonitor {
                 const systemMem = getSystemMemoryInfo();
                 const limitLabel = this.autoDetect ? `Auto ${this.autoDetectPercentage}%` : 'Manual';
                 console.log(
-                        `\x1b[32m[MemoryMonitor] Active\x1b[0m` +
-                        ` → Limit: \x1b[33m${formatBytes(this.memoryLimit)} (${limitLabel})\x1b[0m` +
-                        ` → Log: \x1b[33m${this.logIntervalMs / 1000}s\x1b[0m`
+                        `\x1b[32m→ Memory   :\x1b[39m ${formatBytes(this.memoryLimit)} limit (${limitLabel})`
                 );
 
                 this.checkMemory();

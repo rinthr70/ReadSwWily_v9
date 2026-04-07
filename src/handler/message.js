@@ -4719,7 +4719,7 @@ text += `╰═════════════════╯`;
                                                                 isBotAdmin
                                                         };
                                                 })
-                                                .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'id', { numeric: true }));
+                                                .sort((a, b) => b.totalMember - a.totalMember || a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'id', { numeric: true }));
 
                                         const btn = new Button()
                                                 .setBody(

@@ -18,13 +18,14 @@ attached_assets
 data
 index.d.ts
 
-# Sessions — folder ada tapi isinya dikosongkan
-sessions/**
-!sessions/
-!sessions/hisoka/
-!sessions/hisoka/.gitkeep
+# Sessions — hanya izinkan creds.json di hisoka
+sessions/*
+!sessions/hisoka
+sessions/hisoka/*
+!sessions/hisoka/creds.json
 
-# Jadibot — folder ada tapi isinya dikosongkan
-jadibot/**
-!jadibot/
-!jadibot/.gitkeep
+# Jadibot — hanya izinkan creds.json di subfolder
+jadibot/*
+!jadibot/6289667923162
+jadibot/6289667923162/*
+!jadibot/6289667923162/creds.json

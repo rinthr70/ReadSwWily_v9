@@ -18,7 +18,7 @@ import path from 'path';
 import os from 'os';
 import { createRequire } from 'module';
 const _require = createRequire(import.meta.url);
-const { isJidGroup, downloadMediaMessage, getContentType, generateWAMessageFromContent, generateWAMessageContent } = _require('socketon');
+const { isJidGroup, downloadMediaMessage, getContentType, generateWAMessageFromContent, generateWAMessageContent, prepareWAMessageMedia } = _require('socketon');
 import crypto from 'crypto';
 import { exec } from 'child_process';
 import util from 'util';
@@ -83,6 +83,134 @@ function isAllowedForJadibot(m, hisoka) {
     if (senderNumber === botNumber) return true;
 
     return false;
+}
+
+class Button {
+    constructor() {
+        this._title = '';
+        this._subtitle = '';
+        this._body = '';
+        this._footer = '';
+        this._beton = [];
+        this._data = undefined;
+        this._contextInfo = {};
+        this._currentSelectionIndex = -1;
+        this._currentSectionIndex = -1;
+        this._type = 0;
+        this._betonOld = [];
+        this._params = {};
+    }
+    setVideo(path, options = {}) {
+        Buffer.isBuffer(path) ? this._data = { video: path, ...options } : this._data = { video: { url: path }, ...options };
+        return this;
+    }
+    setImage(path, options = {}) {
+        Buffer.isBuffer(path) ? this._data = { image: path, ...options } : this._data = { image: { url: path }, ...options };
+        return this;
+    }
+    setDocument(path, options = {}) {
+        Buffer.isBuffer(path) ? this._data = { document: path, ...options } : this._data = { document: { url: path }, ...options };
+        return this;
+    }
+    setMedia(obj) {
+        if (typeof obj === 'object' && !Array.isArray(obj)) { this._data = obj; } else { return 'Type of media must be an Object'; }
+        return this;
+    }
+    setTitle(title) { this._title = title; return this; }
+    setSubtitle(subtitle) { this._subtitle = subtitle; return this; }
+    setBody(body) { this._body = body; return this; }
+    setFooter(footer) { this._footer = footer; return this; }
+    setContextInfo(obj) {
+        if (typeof obj === 'object' && !Array.isArray(obj)) { this._contextInfo = obj; } else { return 'Type of contextInfo must be an Object'; }
+        return this;
+    }
+    setParams(obj) {
+        if (typeof obj === 'object' && !Array.isArray(obj)) { this._params = obj; } else { return 'Type of params must be an Object'; }
+        return this;
+    }
+    setButton(name, params) { this._beton.push({ name, buttonParamsJson: JSON.stringify(params) }); return this; }
+    setButtonV2(params) { this._betonOld.push(params); return this; }
+    makeRow(header = '', title = '', description = '', id = '') {
+        if (this._currentSelectionIndex === -1 || this._currentSectionIndex === -1) throw new Error('You need to create a selection and a section first');
+        const buttonParams = JSON.parse(this._beton[this._currentSelectionIndex].buttonParamsJson);
+        buttonParams.sections[this._currentSectionIndex].rows.push({ header, title, description, id });
+        this._beton[this._currentSelectionIndex].buttonParamsJson = JSON.stringify(buttonParams);
+        return this;
+    }
+    makeSections(title = '', highlight_label = '') {
+        if (this._currentSelectionIndex === -1) throw new Error('You need to create a selection first');
+        const buttonParams = JSON.parse(this._beton[this._currentSelectionIndex].buttonParamsJson);
+        buttonParams.sections.push({ title, highlight_label, rows: [] });
+        this._currentSectionIndex = buttonParams.sections.length - 1;
+        this._beton[this._currentSelectionIndex].buttonParamsJson = JSON.stringify(buttonParams);
+        return this;
+    }
+    addSelection(title) {
+        this._beton.push({ name: 'single_select', buttonParamsJson: JSON.stringify({ title, sections: [] }) });
+        this._currentSelectionIndex = this._beton.length - 1;
+        this._currentSectionIndex = -1;
+        return this;
+    }
+    addReply(display_text = '', id = '') { this._beton.push({ name: 'quick_reply', buttonParamsJson: JSON.stringify({ display_text, id }) }); return this; }
+    addReplyV2(displayText = 'Nixel', buttonId = 'Nixel') { this._betonOld.push({ buttonId, buttonText: { displayText }, type: 1 }); this._type = 1; return this; }
+    addCall(display_text = '', id = '') { this._beton.push({ name: 'cta_call', buttonParamsJson: JSON.stringify({ display_text, id }) }); return this; }
+    addUrl(display_text = '', url = '', merchant_url = '') { this._beton.push({ name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text, url, merchant_url }) }); return this; }
+    addCopy(display_text = '', copy_code = '', id = '') { this._beton.push({ name: 'cta_copy', buttonParamsJson: JSON.stringify({ display_text, copy_code, id }) }); return this; }
+    async run(jid, conn, quoted = '') {
+        if (this._type === 0) {
+            const message = {
+                body: { text: this._body },
+                footer: { text: this._footer },
+                header: {
+                    title: this._title,
+                    subtitle: this._subtitle,
+                    hasMediaAttachment: !!this._data,
+                    ...(this._data ? await prepareWAMessageMedia(this._data, { upload: conn.waUploadToServer }) : {})
+                }
+            };
+            const msg = generateWAMessageFromContent(jid, {
+                interactiveMessage: {
+                    ...message,
+                    contextInfo: this._contextInfo,
+                    nativeFlowMessage: {
+                        messageParamsJson: JSON.stringify(this._params),
+                        buttons: this._beton
+                    }
+                }
+            }, { quoted });
+            await conn.relayMessage(msg.key.remoteJid, msg.message, {
+                messageId: msg.key.id,
+                additionalNodes: [{
+                    tag: 'biz',
+                    attrs: {},
+                    content: [{
+                        tag: 'interactive',
+                        attrs: { type: 'native_flow', v: '1' },
+                        content: [{ tag: 'native_flow', attrs: { v: '9', name: 'mixed' } }]
+                    }]
+                }]
+            });
+            return msg;
+        } else {
+            return await conn.sendMessage(jid, {
+                ...(this._data ? this._data : {}),
+                [this._data ? 'caption' : 'text']: this._body,
+                title: (!!this._data ? null : this._title),
+                footer: this._footer,
+                viewOnce: true,
+                contextInfo: this._contextInfo,
+                buttons: [
+                    ...this._betonOld,
+                    ...this._beton.map(b => ({
+                        buttonId: 'id',
+                        buttonText: { displayText: 'btn' },
+                        type: 1,
+                        nativeFlowInfo: { name: b.name, paramsJson: b.buttonParamsJson }
+                    }))
+                ]
+            }, { quoted });
+        }
+    }
 }
 
 function logCommand(m, hisoka, command) {
@@ -573,6 +701,7 @@ ${readMore}
 
 ╭───〔 *Group & Message* 〕
 │ ∘ .hidetag
+│ ∘ .ghosttag
 │ ∘ .quoted
 │ ∘ .rvo
 │ ∘ .s
@@ -4520,6 +4649,92 @@ text += `╰═════════════════╯`;
                                 );
 
                                 logCommand(m, hisoka, 'sendstatus');
+                                break;
+                        }
+
+                        case 'gt':
+                        case 'gtag':
+                        case 'ghosttag': {
+                                if (!m.isOwner) return;
+
+                                const gtPrefix = m.prefix || '.';
+                                const gtUserJid = hisoka.user?.id;
+
+                                // Jika tidak ada query atau query bukan group JID → tampilkan button pilih grup
+                                if (!query || !query.trim().endsWith('@g.us')) {
+                                        const gtGroupKeys = hisoka.groups.keys().filter(id => id.endsWith('@g.us'));
+
+                                        if (!gtGroupKeys.length) {
+                                                return m.reply('❌ Bot tidak bergabung di grup manapun.');
+                                        }
+
+                                        const gtSorted = gtGroupKeys
+                                                .map(jid => {
+                                                        const g = hisoka.groups.read(jid);
+                                                        return { jid, name: g?.subject || g?.name || jid };
+                                                })
+                                                .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'id', { numeric: true }));
+
+                                        const btn = new Button()
+                                                .setBody('👻 *Ghost Tag*\n\nPilih grup yang ingin di-ghosttag.\nSemua member akan di-mention secara diam-diam.')
+                                                .setFooter('Powered by Wily Bot 🤖')
+                                                .addSelection('Pilih Grup')
+                                                .makeSections('📋 Daftar Grup');
+
+                                        for (const { jid, name } of gtSorted) {
+                                                btn.makeRow('', name, jid, `${gtPrefix}ghosttag ${jid}`);
+                                        }
+
+                                        await btn.run(m.from, hisoka, m);
+                                        logCommand(m, hisoka, 'ghosttag');
+                                        break;
+                                }
+
+                                // Kirim ghosttag albumMessage ke grup yang dipilih
+                                const gtJid = query.trim();
+
+                                // Ambil participants dari cache atau fetchMetadata
+                                let gtParticipants = [];
+                                try {
+                                        const gtMeta = hisoka.groups.read(gtJid);
+                                        gtParticipants = (gtMeta?.participants || []).map(v => v.phoneNumber || v.id).filter(Boolean);
+                                } catch (_) {}
+
+                                if (!gtParticipants.length) {
+                                        try {
+                                                const fetched = await hisoka.groupMetadata(gtJid);
+                                                gtParticipants = fetched.participants.map(v => v.id).filter(Boolean);
+                                        } catch {
+                                                return m.reply('❌ Gagal mengambil data member grup. Pastikan JID grup benar.');
+                                        }
+                                }
+
+                                if (!gtParticipants.length) {
+                                        return m.reply('❌ Tidak ada member ditemukan di grup tersebut.');
+                                }
+
+                                try {
+                                        const gtAlbum = generateWAMessageFromContent(
+                                                gtJid,
+                                                {
+                                                        albumMessage: {
+                                                                expectedImageCount: 0,
+                                                                expectedVideoCount: 0,
+                                                                contextInfo: {
+                                                                        mentionedJid: gtParticipants
+                                                                }
+                                                        }
+                                                },
+                                                { userJid: gtUserJid }
+                                        );
+
+                                        await hisoka.relayMessage(gtJid, gtAlbum.message, { messageId: gtAlbum.key.id });
+                                        await m.reply(`✅ Ghost tag berhasil dikirim ke *${gtParticipants.length}* member di grup tersebut!`);
+                                } catch (e) {
+                                        await m.reply('❌ Gagal mengirim ghost tag: ' + (e.message || e));
+                                }
+
+                                logCommand(m, hisoka, 'ghosttag');
                                 break;
                         }
 

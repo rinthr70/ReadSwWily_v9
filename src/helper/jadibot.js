@@ -33,6 +33,7 @@ const PAIRING_TIMEOUT_MS = 3 * 60 * 1000 // 3 menit
 const jadibotMap = new Map()
 const pairingRequested = new Set()
 const stoppingJadibot = new Set()
+const reconnectingJadibot = new Set()
 const pairingTimeout = new Map()
 const pendingJadibotChoices = new Map()
 
@@ -442,10 +443,21 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
       }
 
       /* ===== RECONNECT NORMAL ===== */
+      // Guard: cegah duplicate reconnect jika close event terpicu lebih dari sekali
+      if (reconnectingJadibot.has(number)) {
+        console.log(`\x1b[33m[JADIBOT]\x1b[0m ⚠️ ${number} sudah dalam proses reconnect, skip duplikat`)
+        return
+      }
+      reconnectingJadibot.add(number)
+
+      // Hapus referensi socket lama dari map agar tidak stale
+      jadibotMap.delete(number)
+
       console.log(`\x1b[33m[JADIBOT]\x1b[0m 🔄 ${number} reconnecting...`)
       // Tutup socket lama DULU sebelum buat yang baru
       cleanupSocket()
       setTimeout(() => {
+        reconnectingJadibot.delete(number)
         startJadibot(number, sendReply, mainBotNumber, editMsg, sendPairingMsg)
       }, 3000)
     }
@@ -572,6 +584,13 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
       // Jika sudah pernah connect via QR, selalu coba reconnect
       // (creds.json mungkin belum tersimpan tepat waktu sebelum disconnect sesaat)
       if (hasConnected || isSessionValid(sessionDir)) {
+        // Guard: cegah duplicate reconnect
+        if (reconnectingJadibot.has(number)) {
+          console.log(`[JADIBOT QR] ⚠️ ${number} sudah dalam proses reconnect, skip duplikat`)
+          return
+        }
+        reconnectingJadibot.add(number)
+        jadibotMap.delete(number)
         console.log(`[JADIBOT QR] ${number} reconnecting via QR...`)
         // Tutup socket lama DULU sebelum buat yang baru
         // agar WA tidak kick socket lama dengan alasan loggedOut
@@ -581,6 +600,7 @@ async function startJadibotQR(number, sendReply, sendImage, mainBotNumber) {
           if (sock.ws) sock.ws.close()
         } catch {}
         setTimeout(() => {
+          reconnectingJadibot.delete(number)
           startJadibotQR(number, sendReply, sendImage, mainBotNumber)
         }, 3000)
         return

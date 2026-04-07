@@ -194,7 +194,7 @@ export function startAutoCleaner(intervalHours = 6) {
 
     stopAutoCleaner();
 
-    console.log(`\x1b[32m[Cleaner]\x1b[39m Auto-cleaner started (every ${hours}h)`);
+    // log cleaner diremove agar tidak mengganggu tampilan startup
     clearOldFiles(24);
 
     _autoCleanerInterval = setInterval(() => {
@@ -247,7 +247,6 @@ export function cleanStaleSessionFiles(sessionDir, { skipConfigCheck = false } =
         const SAFE_BUFFER = 200
         const safeDeleteBefore = firstUnuploaded - SAFE_BUFFER
         if (safeDeleteBefore <= 0) {
-            console.log(`\x1b[32m[SessionCleaner]\x1b[39m Session sudah bersih`)
             return
         }
 
@@ -310,8 +309,6 @@ export function cleanStaleSessionFiles(sessionDir, { skipConfigCheck = false } =
                 (deletedSessions > 0 ? ` + ${deletedSessions} session lama` : '') +
                 ` → hemat ${sizeStr}`
             )
-        } else {
-            console.log(`\x1b[32m[SessionCleaner]\x1b[39m Session sudah bersih`)
         }
     } catch (err) {
         console.error(`\x1b[31m[SessionCleaner]\x1b[39m Error:`, err.message)

@@ -541,7 +541,6 @@ async function main() {
                         const modeLabel = autoOnline2.enabled !== false ? 'ONLINE 🟢' : 'OFFLINE 🔴';
 
                         const G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', R = '\x1b[0m', B = '\x1b[1m';
-                        console.log('');
                         console.log(`${C}╔══════════════════════════════════╗${R}`);
                         console.log(`${C}║${R}     ${B}${G}🤖  W I L Y  B O T  A K T I F${R}     ${C}║${R}`);
                         console.log(`${C}╠══════════════════════════════════╣${R}`);
@@ -551,7 +550,6 @@ async function main() {
                         console.log(`${C}║${R} ${Y}👥${R} Grup   : ${B}${groupCount} grup (admin: ${adminCount})${R}`);
                         console.log(`${C}║${R} ${G}🌐${R} Status : ${B}${modeLabel}${R}`);
                         console.log(`${C}╚══════════════════════════════════╝${R}`);
-                        console.log('');
 
                         const startAutoOnline = () => {
                         const config = loadConfig();
@@ -579,7 +577,7 @@ async function main() {
                         }
 
                 }, intervalMs);
-                                        console.log(`\x1b[32m[AutoOnline]\x1b[39m Started - Mode: ONLINE`);
+                                        // status sudah tampil di kotak bot
                                 } else {
                                         hisoka.sendPresenceUpdate('unavailable');
 
@@ -595,7 +593,7 @@ async function main() {
                         }
 
                 }, intervalMs);
-                                        console.log(`\x1b[33m[AutoOffline]\x1b[39m Started - Mode: OFFLINE`);
+                                        // status sudah tampil di kotak bot
                                 }
                         };
 
@@ -621,31 +619,40 @@ setTimeout(() => {
   if (!bots.length) return;
 
   const C = '\x1b[36m', G = '\x1b[32m', Y = '\x1b[33m', R = '\x1b[0m', B = '\x1b[1m';
-  console.log('');
-  console.log(`${C}╔══════════════════════════════════╗${R}`);
-  console.log(`${C}║${R}   ${B}${Y}🤖  A U T O  J A D I B O T${R}         ${C}║${R}`);
-  console.log(`${C}╠══════════════════════════════════╣${R}`);
-  console.log(`${C}║${R} ${Y}📦${R} Total  : ${B}${bots.length} sesi tersimpan${R}`);
 
+  const validBots = [];
+  const invalidBots = [];
   for (const number of bots) {
     if (global.autoStartedJadibot.has(number)) continue;
     global.autoStartedJadibot.add(number);
-
     if (!isJadibotSessionValid(number)) {
-      console.log(`${C}║${R} ${Y}⚠️${R}  ${number} - session tidak valid`);
-      continue;
+      invalidBots.push(number);
+    } else {
+      validBots.push(number);
     }
+  }
 
-    console.log(`${C}║${R} ${G}▶${R}  Starting: ${B}${number}${R}`);
+  if (!validBots.length && !invalidBots.length) return;
+
+  console.log(`${C}╔══════════════════════════════════╗${R}`);
+  console.log(`${C}║${R}   ${B}${Y}🤖  A U T O  J A D I B O T${R}         ${C}║${R}`);
+  console.log(`${C}╠══════════════════════════════════╣${R}`);
+  console.log(`${C}║${R} ${Y}📦${R} Total  : ${B}${validBots.length + invalidBots.length} sesi tersimpan${R}`);
+  for (const number of invalidBots) {
+    console.log(`${C}║${R} ${Y}⚠️ ${R} ${number} - tidak valid`);
+  }
+  for (const number of validBots) {
+    console.log(`${C}║${R} ${G}▶  ${R}${B}${number}${R}`);
+  }
+  console.log(`${C}╚══════════════════════════════════╝${R}`);
+
+  for (const number of validBots) {
     startJadibot(
       number,
       () => {},
       hisoka.user.id.split(':')[0].split('@')[0]
     );
   }
-
-  console.log(`${C}╚══════════════════════════════════╝${R}`);
-  console.log('');
 }, 3000); // delay agar socket utama stabil
 }
 

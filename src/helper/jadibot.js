@@ -363,14 +363,12 @@ async function startJadibot(number, sendReply, mainBotNumber, editMsg = null, se
       }
 
       const C = '\x1b[36m', G = '\x1b[32m', R = '\x1b[0m', B = '\x1b[1m';
-      console.log('');
       console.log(`${C}╔══════════════════════════════════╗${R}`);
       console.log(`${C}║${R}    ${B}${G}✅  J A D I B O T  A K T I F${R}      ${C}║${R}`);
       console.log(`${C}╠══════════════════════════════════╣${R}`);
       console.log(`${C}║${R} ${G}📱${R} Nomor  : ${B}+${number}${R}`);
       console.log(`${C}║${R} ${G}🔗${R} Status : ${B}CONNECTED${R}`);
       console.log(`${C}╚══════════════════════════════════╝${R}`);
-      console.log('');
 
       // Edit pesan pairing secara realtime → tandai sudah terhubung
       if (pairingMsgKey && editMsg) {

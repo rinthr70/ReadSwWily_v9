@@ -3653,7 +3653,7 @@ text += `╰═════════════════╯`;
                                 const owners = config.owners || [];
 
                                 const EXCLUDED = new Set([
-                                        'attached_assets', '.git', '.agents', 'sessions',
+                                        'attached_assets', '.git', '.agents', 'sessions', 'jadibot',
                                         '.upm', 'node_modules', 'package-lock.json',
                                         '.cache', '.local'
                                 ]);
